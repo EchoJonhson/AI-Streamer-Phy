@@ -7,7 +7,8 @@ const LivePage = () => {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [modelPath, setModelPath] = useState('/live2d/models/haru/haru_greeter_t03.model3.json');
+  const [modelPath, setModelPath] = useState('/live2d/models/wuwuwu/wuwuwu.model3.json');
+  const [modelLoading, setModelLoading] = useState(false);
   const navigate = useNavigate();
 
   // 检查用户是否已登录
@@ -28,6 +29,27 @@ const LivePage = () => {
       ]);
     }
   }, [navigate]);
+
+  // 检查模型文件是否存在
+  useEffect(() => {
+    const checkModelExists = async () => {
+      try {
+        setModelLoading(true);
+        const response = await fetch(modelPath, { method: 'HEAD' });
+        if (!response.ok) {
+          console.error(`模型文件不存在: ${modelPath}, 状态: ${response.status}`);
+        } else {
+          console.log(`模型文件存在: ${modelPath}`);
+        }
+      } catch (error) {
+        console.error(`检查模型文件失败: ${error.message}`);
+      } finally {
+        setModelLoading(false);
+      }
+    };
+    
+    checkModelExists();
+  }, [modelPath]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -61,6 +83,12 @@ const LivePage = () => {
     <div className="live-page">
       <div className="live-container">
         <div className="model-container">
+          {/* 调试信息 */}
+          <div className="debug-info">
+            <p>当前模型路径: {modelPath}</p>
+            <p>模型状态: {modelLoading ? '检查中...' : '已检查'}</p>
+          </div>
+          
           {/* 集成Live2D模型组件 */}
           <Live2DModelComponent 
             modelPath={modelPath}

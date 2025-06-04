@@ -14,4 +14,40 @@
   user-select: none;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   background-color: transparent;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.loading-text {
+  color: white;
+  font-size: 18px;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.error-details {
+  color: #ff6b6b;
+  font-size: 14px;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 5px;
+  max-width: 80%;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: monospace;
 } 
