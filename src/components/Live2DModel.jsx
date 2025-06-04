@@ -21,15 +21,34 @@ export default function Live2DModelComponent() {
       try {
         console.log('初始化Live2D模型...');
         
-        // 检查Cubism运行时是否已加载
-        if (!window.Live2DCubismCore) {
-          console.warn('Cubism 4运行时未加载，尝试等待...');
-          // 给一些时间让脚本加载
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        // 等待一段时间，确保运行时库加载完成
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // 检查Cubism 2运行时是否已加载
+        if (!window.Live2D || !window.Live2D.init) {
+          console.warn('Cubism 2运行时未加载，尝试从备用CDN加载...');
           
-          if (!window.Live2DCubismCore) {
-            throw new Error('Cubism 4运行时未加载，请确保live2dcubismcore.min.js已正确引入');
-          }
+          // 创建并添加脚本
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/gh/dylanNew/live2d/webgl/Live2D/lib/live2d.min.js';
+          document.head.appendChild(script);
+          
+          // 等待脚本加载
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('无法加载Cubism 2运行时'));
+            // 设置超时
+            setTimeout(() => reject(new Error('加载Cubism 2运行时超时')), 5000);
+          });
+        }
+        
+        console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
+        
+        // 检查Cubism 4运行时是否已加载
+        if (!window.Live2DCubismCore) {
+          console.warn('Cubism 4运行时未加载');
+        } else {
+          console.log('Cubism 4运行时已加载');
         }
         
         // 创建 PIXI 应用

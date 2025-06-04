@@ -5,8 +5,26 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>虚拟AI主播</title>
+    <!-- 直接从CDN加载Cubism 2运行时库 -->
+    <script src="https://cdn.jsdelivr.net/gh/dylanNew/live2d/webgl/Live2D/lib/live2d.min.js"></script>
+    <!-- 加载本地备份 -->
     <script src="/libs/live2d.min.js"></script>
+    <!-- 加载Cubism 4运行时库 -->
     <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+    <script>
+      // 检查Cubism 2运行时是否加载成功
+      window.addEventListener('DOMContentLoaded', function() {
+        console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
+        console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
+        
+        if (!window.Live2D || !window.Live2D.init) {
+          console.warn('尝试从备用CDN加载Cubism 2运行时...');
+          var script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/live2d-lib@1.0.1/lib/live2d.min.js';
+          document.head.appendChild(script);
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
