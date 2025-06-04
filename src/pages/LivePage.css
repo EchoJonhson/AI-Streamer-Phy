@@ -25,6 +25,13 @@
   border: 1px solid rgba(255, 85, 170, 0.3);
   width: 100%;
   height: 100%;
+  z-index: 1;
+}
+
+/* 确保Live2D模型在背景之上 */
+.live2d-container {
+  position: relative;
+  z-index: 10;
 }
 
 .model-placeholder {

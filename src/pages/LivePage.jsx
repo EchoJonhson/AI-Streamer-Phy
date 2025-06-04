@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Live2DModelComponent from '../components/Live2DModel';
+import LiveBackground from '../components/LiveBackground';
 import './LivePage.css';
 
 const LivePage = () => {
@@ -9,6 +10,8 @@ const LivePage = () => {
   const [messages, setMessages] = useState([]);
   const [modelPath, setModelPath] = useState('/live2d/models/wuwuwu/wuwuwu.model3.json');
   const [modelLoading, setModelLoading] = useState(false);
+  const [backgroundType, setBackgroundType] = useState('image'); // 'video' or 'image'
+  const [backgroundSrc, setBackgroundSrc] = useState('/backgrounds/default-bg.gif');
   const navigate = useNavigate();
 
   // 检查用户是否已登录
@@ -83,10 +86,14 @@ const LivePage = () => {
     <div className="live-page">
       <div className="live-container">
         <div className="model-container">
+          {/* 添加背景 */}
+          <LiveBackground type={backgroundType} src={backgroundSrc} />
+          
           {/* 调试信息 */}
           <div className="debug-info">
             <p>当前模型路径: {modelPath}</p>
             <p>模型状态: {modelLoading ? '检查中...' : '已检查'}</p>
+            <p>背景类型: {backgroundType}</p>
           </div>
           
           {/* 集成Live2D模型组件 */}
