@@ -27,9 +27,10 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
       autoStart: true,
       width,
       height,
-      backgroundColor: 0x00000000, // 透明背景
+      backgroundColor: 0x00000000, // 完全透明背景
       resolution: window.devicePixelRatio || 1,
       autoDensity: true,
+      transparent: true, // 确保应用背景透明
     });
     
     appRef.current = app;
@@ -61,11 +62,11 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         // 设置模型属性
         model.anchor.set(0.5, 0.5);
         
-        // 将模型位置调整到画布的中部，使其完全露出脸部
-        model.position.set(width / 2, height * 0.55);
+        // 将模型位置调整到画布的底部，按照要求调整
+        model.position.set(width / 2, height * 0.9);
         
-        // 调整模型大小
-        const scale = Math.min(width / model.width, height / model.height) * 1.6;
+        // 调整模型大小为2倍
+        const scale = Math.min(width / model.width, height / model.height) * 2.0;
         model.scale.set(scale, scale);
         
         // 添加模型到舞台
