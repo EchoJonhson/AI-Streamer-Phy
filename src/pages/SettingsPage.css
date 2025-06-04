@@ -1,0 +1,145 @@
+.settings-page {
+  min-height: calc(100vh - 150px);
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a35 100%);
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.settings-container {
+  max-width: 800px;
+  width: 100%;
+  background-color: rgba(30, 30, 50, 0.7);
+  border-radius: 20px;
+  box-shadow: 0 0 30px rgba(255, 85, 170, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 85, 170, 0.3);
+  padding: 2rem;
+}
+
+.settings-container h1 {
+  color: #ff55aa;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  font-size: 2.2rem;
+  text-shadow: 0 0 10px rgba(255, 85, 170, 0.5);
+}
+
+.settings-username {
+  text-align: center;
+  color: #c0c0ff;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+
+.settings-section h2 {
+  color: #c0c0ff;
+  border-bottom: 1px solid rgba(255, 85, 170, 0.3);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.setting-item {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(40, 40, 70, 0.6);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.setting-item:hover {
+  background-color: rgba(50, 50, 90, 0.6);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.setting-item label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #e0e0ff;
+  font-size: 1.1rem;
+}
+
+.setting-description {
+  color: #a0a0cc;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.setting-item input[type="checkbox"] {
+  margin-right: 10px;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+
+.setting-item select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background-color: rgba(20, 20, 40, 0.6);
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+.setting-item select:focus {
+  outline: none;
+  border-color: #ff55aa;
+  box-shadow: 0 0 0 2px rgba(255, 85, 170, 0.3);
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.settings-actions button {
+  flex: 1;
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-button {
+  background: linear-gradient(90deg, #ff55aa, #ff557f);
+  color: white;
+  box-shadow: 0 5px 15px rgba(255, 85, 170, 0.4);
+}
+
+.save-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 85, 170, 0.6);
+}
+
+.reset-button {
+  background: rgba(20, 20, 40, 0.6);
+  color: #c0c0ff;
+  border: 1px solid rgba(255, 85, 170, 0.3) !important;
+}
+
+.reset-button:hover {
+  background: rgba(30, 30, 60, 0.6);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 1.5rem;
+  }
+  
+  .settings-actions {
+    flex-direction: column;
+  }
+} 
