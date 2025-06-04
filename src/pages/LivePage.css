@@ -19,7 +19,7 @@
 .model-container {
   background-color: transparent !important;
   border-radius: 15px;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   box-shadow: 0 0 30px rgba(255, 85, 170, 0.2);
   border: 1px solid rgba(255, 85, 170, 0.3);

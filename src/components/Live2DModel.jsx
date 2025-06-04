@@ -63,10 +63,10 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         model.anchor.set(0.5, 0.5);
         
         // 将模型位置调整到画布的底部，按照要求调整
-        model.position.set(width / 2, height * 0.9);
+        model.position.set(width / 2, height * 1.4);
         
-        // 调整模型大小为2倍
-        const scale = Math.min(width / model.width, height / model.height) * 2.0;
+        // 调整模型大小为2.3倍
+        const scale = Math.min(width / model.width, height / model.height) * 2.3;
         model.scale.set(scale, scale);
         
         // 添加模型到舞台
