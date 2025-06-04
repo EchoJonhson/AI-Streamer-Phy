@@ -16,5 +16,11 @@
         }
       ]
     }
-  ]
+  ],
+  "github": {
+    "silent": false,
+    "autoAlias": true
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
 } 
