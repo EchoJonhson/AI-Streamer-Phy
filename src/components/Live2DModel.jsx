@@ -61,11 +61,11 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         // 设置模型属性
         model.anchor.set(0.5, 0.5);
         
-        // 将模型位置调整到画布的中下部，使其只显示上半身
-        model.position.set(width / 2, height * 0.7);
+        // 将模型位置调整到画布的中部，使其完全露出脸部
+        model.position.set(width / 2, height * 0.55);
         
-        // 放大模型，使其上半身填满画布
-        const scale = Math.min(width / model.width, height / model.height) * 1.8;
+        // 调整模型大小
+        const scale = Math.min(width / model.width, height / model.height) * 1.6;
         model.scale.set(scale, scale);
         
         // 添加模型到舞台
