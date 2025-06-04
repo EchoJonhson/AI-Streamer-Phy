@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Page1.css';
-import Live2DModelComponent from '../components/Live2DModel';
+// 暂时移除Live2D模型导入
+// import Live2DModelComponent from '../components/Live2DModel';
 
 function Page1() {
   const [nickname, setNickname] = useState('');
@@ -55,10 +56,10 @@ function Page1() {
             <div className="feature-desc">弹幕、点赞、送礼物，乐趣无穷。</div>
           </div>
         </div>
-        {/* Live2D 模型区域 */}
-        <div className="live2d-container">
+        {/* 暂时移除Live2D模型区域 */}
+        {/* <div className="live2d-container">
           <Live2DModelComponent />
-        </div>
+        </div> */}
       </div>
     </div>
   );

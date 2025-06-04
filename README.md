@@ -1,43 +1,59 @@
-# Virtual AI Streamer
+# 虚拟AI主播项目
 
-一个基于 React + Vite 开发的虚拟主播项目，模仿"主播女孩重度依赖"的游戏界面风格。
+这是一个使用React和Vite构建的虚拟AI主播项目，包含Live2D模型展示和互动功能。
 
 ## 功能特点
 
-- 复古像素风格UI
-- 实时弹幕互动
-- 虚拟主播表情系统
-- 观众互动系统
-- 直播数据统计
+- 响应式设计，适配各种设备
+- Live2D模型展示与互动
+- 弹幕系统
+- 霓虹赛博朋克风格UI
+
+## 页面说明
+
+- **欢迎页 (Page1)**: 用户输入昵称并进入直播间
+- **直播页 (Page2)**: 包含Live2D模型展示区和互动区域
 
 ## 技术栈
 
-- React 18
+- React
 - Vite
-- CSS3
-- WebSocket (计划中)
+- React Router
+- PIXI.js
+- pixi-live2d-display
 
-## 开发
+## 部署信息
+
+项目已部署到Vercel，可通过以下链接访问：
+[虚拟AI主播](https://virtual-ai-streamer.vercel.app/)
+
+## 开发说明
+
+### 安装依赖
 
 ```bash
-# 安装依赖
 npm install
+```
 
-# 启动开发服务器
+### 本地开发
+
+```bash
 npm run dev
+```
 
-# 构建生产版本
+### 构建项目
+
+```bash
 npm run build
 ```
 
-## 部署
+## Live2D模型互动说明
 
-项目已配置 Vercel 自动部署，每次推送到 main 分支都会自动部署。
+- 点击模型触发动作
+- 拖动模型改变位置
+- 滚轮缩放模型大小
 
-## 贡献
+## 联系方式
 
-欢迎提交 Issue 和 Pull Request！
-
-## 许可证
-
-MIT
+邮箱: 3485573766@qq.com
+GitHub: [https://github.com/tsurumiyakwa/virtual-ai-streamer](https://github.com/tsurumiyakwa/virtual-ai-streamer)
