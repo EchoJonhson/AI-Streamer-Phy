@@ -33,19 +33,19 @@ const LivePage = () => {
     }
   }, [navigate]);
 
-  // 检查模型文件是否存�?
+  // 检查模型文件是否存在
   useEffect(() => {
     const checkModelExists = async () => {
       try {
         setModelLoading(true);
         const response = await fetch(modelPath, { method: 'HEAD' });
         if (!response.ok) {
-          console.error(`模型文件不存�? ${modelPath}, 状�? ${response.status}`);
+          console.error(`模型文件不存在: ${modelPath}, 状态: ${response.status}`);
         } else {
           console.log(`模型文件存在: ${modelPath}`);
         }
       } catch (error) {
-        console.error(`检查模型文件失�? ${error.message}`);
+        console.error(`检查模型文件失败: ${error.message}`);
       } finally {
         setModelLoading(false);
       }
@@ -70,7 +70,7 @@ const LivePage = () => {
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setMessage('');
 
-    // 模拟AI回复（这里将来会替换为真实的AI API调用�?
+    // 模拟AI回复（这里将来会替换为真实的AI API调用）
     setTimeout(() => {
       const aiResponse = {
         id: Date.now() + 1,
@@ -92,7 +92,7 @@ const LivePage = () => {
           {/* 调试信息 */}
           <div className="debug-info">
             <p>当前模型路径: {modelPath}</p>
-            <p>模型状�? {modelLoading ? '检查中...' : '已检�?}</p>
+            <p>模型状态: {modelLoading ? '检查中...' : '已检查'}</p>
             <p>背景类型: {backgroundType}</p>
           </div>
           
@@ -106,7 +106,7 @@ const LivePage = () => {
         
         <div className="chat-container">
           <div className="chat-header">
-            <h2>直播间聊�?/h2>
+            <h2>直播间聊天</h2>
             <div className="online-status">
               <span className="status-dot"></span>
               在线
@@ -136,7 +136,7 @@ const LivePage = () => {
               placeholder="发送消息给AI主播..."
               className="message-input"
             />
-            <button type="submit" className="send-button">发�?/button>
+            <button type="submit" className="send-button">发送</button>
           </form>
         </div>
       </div>
