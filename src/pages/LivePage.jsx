@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Live2DModelComponent from '../components/Live2DModel';
 import './LivePage.css';
 
 const LivePage = () => {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [modelPath, setModelPath] = useState('/live2d/models/haru/haru_greeter_t03.model3.json');
   const navigate = useNavigate();
 
   // 检查用户是否已登录
@@ -59,10 +61,12 @@ const LivePage = () => {
     <div className="live-page">
       <div className="live-container">
         <div className="model-container">
-          {/* 这里将来会放置Live2D模型 */}
-          <div className="model-placeholder">
-            <div className="placeholder-text">Live2D模型将在这里显示</div>
-          </div>
+          {/* 集成Live2D模型组件 */}
+          <Live2DModelComponent 
+            modelPath={modelPath}
+            width={window.innerWidth * 0.6}
+            height={window.innerHeight - 150}
+          />
         </div>
         
         <div className="chat-container">
