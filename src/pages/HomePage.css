@@ -3,9 +3,7 @@
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 150px);
-  width: 100%;
   background: linear-gradient(135deg, #0f0f1a 0%, #1a1a35 100%);
-  padding: 2rem 1rem;
 }
 
 .welcome-container {

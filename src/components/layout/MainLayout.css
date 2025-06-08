@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  width: 100%;
   background-color: #0f0f1a;
   color: #e0e0ff;
 }
@@ -18,7 +17,6 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  width: 100%;
 }
 
 .logo {
@@ -66,8 +64,7 @@
 
 .content {
   flex: 1;
-  padding: 0;
-  width: 100%;
+  padding: 2rem;
 }
 
 .footer {
@@ -77,5 +74,4 @@
   border-top: 1px solid #3a3a5a;
   font-size: 0.9rem;
   color: #8888aa;
-  width: 100%;
 } 
