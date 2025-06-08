@@ -2,7 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Live2DModelComponent from '../components/Live2DModel';
 import LiveBackground from '../components/LiveBackground';
+import * as PIXI from 'pixi.js';
+import { Live2DModel } from 'pixi-live2d-display';
 import './LivePage.css';
+
+// 初始化PIXI和Live2D环境
+window.PIXI = PIXI;
+
+// 确保Live2D核心库已加载
+const ensureLive2DEnvironment = () => {
+  // 注册PIXI Ticker
+  if (Live2DModel && !Live2DModel.hasOwnProperty('tickerAdded')) {
+    console.log('注册PIXI Ticker');
+    Live2DModel.registerTicker(PIXI.Ticker.shared);
+    Live2DModel.tickerAdded = true;
+  }
+  
+  // 检查Cubism核心库是否已加载
+  if (!window.Live2DCubismCore) {
+    console.log('Cubism 4运行时状态: 未加载');
+  } else {
+    console.log('Cubism 4运行时状态: 已加载');
+  }
+  
+  // 检查Live2D库是否已加载
+  if (!window.Live2D) {
+    console.log('Cubism 2运行时状态: 未加载');
+  } else {
+    console.log('Cubism 2运行时状态: 已加载');
+  }
+};
 
 const LivePage = () => {
   const [username, setUsername] = useState('');
@@ -14,6 +43,11 @@ const LivePage = () => {
   const [backgroundSrc, setBackgroundSrc] = useState('./backgrounds/custom-bg.png');
   const [debugMode, setDebugMode] = useState(true);
   const navigate = useNavigate();
+
+  // 初始化Live2D环境
+  useEffect(() => {
+    ensureLive2DEnvironment();
+  }, []);
 
   // 初始化模型路径
   useEffect(() => {
@@ -69,6 +103,39 @@ const LivePage = () => {
           console.log(`模型文件存在: ${modelPath}`);
           const jsonData = await response.json();
           console.log('模型配置:', jsonData);
+          
+          // 检查模型文件引用是否完整
+          if (jsonData.FileReferences) {
+            const { Moc, Textures, Physics } = jsonData.FileReferences;
+            
+            // 检查核心模型文件
+            if (Moc) {
+              const mocPath = modelPath.substring(0, modelPath.lastIndexOf('/') + 1) + Moc;
+              try {
+                const mocResponse = await fetch(mocPath);
+                if (!mocResponse.ok) {
+                  console.error(`模型核心文件不可访问: ${mocPath}`);
+                }
+              } catch (error) {
+                console.error(`检查模型核心文件失败: ${error.message}`);
+              }
+            }
+            
+            // 检查纹理文件
+            if (Textures && Textures.length > 0) {
+              for (const texture of Textures) {
+                const texturePath = modelPath.substring(0, modelPath.lastIndexOf('/') + 1) + texture;
+                try {
+                  const textureResponse = await fetch(texturePath);
+                  if (!textureResponse.ok) {
+                    console.error(`纹理文件不可访问: ${texturePath}`);
+                  }
+                } catch (error) {
+                  console.error(`检查纹理文件失败: ${error.message}`);
+                }
+              }
+            }
+          }
         } else {
           console.error(`模型文件不存在: ${modelPath}, 状态: ${response.status}`);
         }

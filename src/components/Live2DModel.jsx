@@ -127,7 +127,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
           backgroundColor: 0x00000000, // 完全透明背景
           resolution: window.devicePixelRatio || 1,
           autoDensity: true,
-          transparent: true, // 确保应用背景透明
+          backgroundAlpha: 0, // 使用backgroundAlpha替代transparent
         });
         
         appRef.current = app;
@@ -225,6 +225,9 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
       PIXI.Loader.shared.baseUrl = fullModelPath.substring(0, fullModelPath.lastIndexOf('/') + 1);
       console.log('设置PIXI Loader基础路径:', PIXI.Loader.shared.baseUrl);
       
+      // 注册PIXI Ticker
+      Live2DModel.registerTicker(PIXI.Ticker.shared);
+      
       const model = await Live2DModel.from(fullModelPath, {
         autoInteract: false, // 关闭自动交互，我们将自定义交互
         autoUpdate: true,
@@ -288,25 +291,36 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
     // 使模型可交互
     model.interactive = true;
     
-    // 点击模型触发动作
+    // 点击模型触发动作 - 使用安全检查
     model.on('pointerdown', (event) => {
       // 获取点击位置
       const point = event.data.global;
       
-      // 检查点击的命中区域
-      const hitAreas = model.hitTest(point.x, point.y);
-      console.log('点击模型:', hitAreas);
-      
-      if (hitAreas && hitAreas.length > 0) {
-        // 触发模型的hit事件
-        model.emit('hit', hitAreas);
-        
-        // 根据点击区域执行不同动作
-        if (hitAreas.includes('body')) {
-          model.motion('tap_body');
-        } else if (hitAreas.includes('head')) {
-          model.motion('tap_head');
+      try {
+        // 检查hitTest方法是否存在
+        if (typeof model.hitTest === 'function') {
+          // 检查点击的命中区域
+          const hitAreas = model.hitTest(point.x, point.y);
+          console.log('点击模型:', hitAreas);
+          
+          if (hitAreas && hitAreas.length > 0) {
+            // 触发模型的hit事件
+            model.emit('hit', hitAreas);
+            
+            // 根据点击区域执行不同动作
+            if (hitAreas.includes('body')) {
+              if (typeof model.motion === 'function') {
+                model.motion('tap_body');
+              }
+            } else if (hitAreas.includes('head')) {
+              if (typeof model.motion === 'function') {
+                model.motion('tap_head');
+              }
+            }
+          }
         }
+      } catch (error) {
+        console.warn('处理模型点击事件时出错:', error);
       }
     });
 
@@ -344,7 +358,14 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
     
     // 添加清理函数到app.ticker，确保在每一帧更新模型
     app.ticker.add((delta) => {
-      if (model && model.internalModel && model.internalModel.coreModel) {
+      if (!model || !model.internalModel) return;
+      
+      try {
+        const internalModel = model.internalModel;
+        const coreModel = internalModel && internalModel.coreModel;
+        
+        if (!coreModel) return;
+        
         // 平滑过渡到目标值
         const current = currentValuesRef.current;
         const target = targetValuesRef.current;
@@ -362,86 +383,79 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         current.bodyX += (target.bodyX - current.bodyX) * bodySmoothing;
         current.bodyY += (target.bodyY - current.bodyY) * bodySmoothing;
         
-        // 应用到模型参数
-        const coreModel = model.internalModel.coreModel;
-        
         // 更新呼吸状态
         const breath = breathStateRef.current;
         breath.time += delta * 0.016; // 控制呼吸速度
         const breathValue = Math.sin(breath.time * breath.frequency * Math.PI) * breath.amplitude;
         
+        // 安全地设置参数值
+        const safeSetParam = (paramId, value) => {
+          try {
+            // 检查参数ID是否有效
+            if (typeof internalModel.getParamIndex === 'function') {
+              const index = internalModel.getParamIndex(paramId);
+              if (index !== -1 && typeof internalModel.setParam === 'function') {
+                internalModel.setParam(paramId, value);
+              }
+            } else if (typeof coreModel.setParameterValueById === 'function') {
+              coreModel.setParameterValueById(paramId, value);
+            }
+          } catch (e) {
+            // 忽略参数设置错误
+          }
+        };
+        
         // 眼球跟踪
-        if (coreModel.getParameterCount) {
-          // 检查参数是否存在并应用
-          if (coreModel.getParameterId('ParamEyeBallX') !== -1) {
-            coreModel.setParameterValueById('ParamEyeBallX', current.eyeX);
-          }
-          if (coreModel.getParameterId('ParamEyeBallY') !== -1) {
-            coreModel.setParameterValueById('ParamEyeBallY', current.eyeY);
-          }
+        safeSetParam('ParamEyeBallX', current.eyeX);
+        safeSetParam('ParamEyeBallY', current.eyeY);
+        
+        // 头部跟踪
+        safeSetParam('ParamAngleX', current.headX);
+        safeSetParam('ParamAngleY', current.headY + breathValue * 2);
+        safeSetParam('ParamAngleZ', breathValue * 2);
+        
+        // 身体跟踪
+        safeSetParam('ParamBodyAngleX', current.bodyX);
+        safeSetParam('ParamBodyAngleY', current.bodyY + breathValue * 0.8);
+        safeSetParam('ParamBodyAngleZ', breathValue);
+        
+        // 应用呼吸效果到胸部
+        safeSetParam('ParamBreath', breathValue + 0.5);
+        
+        // 处理眨眼
+        if (blinkStateRef.current.isBlinking) {
+          const blink = blinkStateRef.current;
           
-          // 头部跟踪
-          if (coreModel.getParameterId('ParamAngleX') !== -1) {
-            coreModel.setParameterValueById('ParamAngleX', current.headX);
-          }
-          if (coreModel.getParameterId('ParamAngleY') !== -1) {
-            coreModel.setParameterValueById('ParamAngleY', current.headY + breathValue * 2);
-          }
-          if (coreModel.getParameterId('ParamAngleZ') !== -1) {
-            coreModel.setParameterValueById('ParamAngleZ', breathValue * 2);
-          }
-          
-          // 身体跟踪
-          if (coreModel.getParameterId('ParamBodyAngleX') !== -1) {
-            coreModel.setParameterValueById('ParamBodyAngleX', current.bodyX);
-          }
-          if (coreModel.getParameterId('ParamBodyAngleY') !== -1) {
-            coreModel.setParameterValueById('ParamBodyAngleY', current.bodyY + breathValue * 0.8);
-          }
-          if (coreModel.getParameterId('ParamBodyAngleZ') !== -1) {
-            coreModel.setParameterValueById('ParamBodyAngleZ', breathValue);
-          }
-          
-          // 应用呼吸效果到胸部
-          if (coreModel.getParameterId('ParamBreath') !== -1) {
-            coreModel.setParameterValueById('ParamBreath', breathValue + 0.5);
-          }
-          
-          // 处理眨眼
-          if (blinkStateRef.current.isBlinking) {
-            const blink = blinkStateRef.current;
-            
-            // 眨眼动画
-            if (blink.phase === 'close') {
-              blink.value += 0.1; // 控制眨眼速度
-              if (blink.value >= 1) {
-                blink.phase = 'open';
-              }
-            } else {
-              blink.value -= 0.05; // 控制睁眼速度，比眨眼慢一些
-              if (blink.value <= 0) {
-                blink.isBlinking = false;
-                blink.value = 0;
-              }
+          // 眨眼动画
+          if (blink.phase === 'close') {
+            blink.value += 0.1; // 控制眨眼速度
+            if (blink.value >= 1) {
+              blink.phase = 'open';
             }
-            
-            // 应用眨眼参数
-            if (coreModel.getParameterId('ParamEyeLOpen') !== -1) {
-              coreModel.setParameterValueById('ParamEyeLOpen', 1 - blink.value);
-            }
-            if (coreModel.getParameterId('ParamEyeROpen') !== -1) {
-              coreModel.setParameterValueById('ParamEyeROpen', 1 - blink.value);
+          } else {
+            blink.value -= 0.05; // 控制睁眼速度，比眨眼慢一些
+            if (blink.value <= 0) {
+              blink.isBlinking = false;
+              blink.value = 0;
             }
           }
+          
+          // 应用眨眼参数
+          safeSetParam('ParamEyeLOpen', 1 - blink.value);
+          safeSetParam('ParamEyeROpen', 1 - blink.value);
         }
         
         // 确保物理效果正常工作
-        if (model.internalModel.motionManager) {
-          model.internalModel.motionManager.update();
+        if (internalModel.motionManager && typeof internalModel.motionManager.update === 'function') {
+          internalModel.motionManager.update();
         }
         
         // 更新模型
-        model.update(app.ticker.deltaMS / 1000);
+        if (typeof model.update === 'function') {
+          model.update(app.ticker.deltaMS / 1000);
+        }
+      } catch (error) {
+        console.warn('更新模型参数时出错:', error);
       }
     });
   };
