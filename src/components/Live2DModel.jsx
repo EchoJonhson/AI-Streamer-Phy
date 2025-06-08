@@ -83,6 +83,8 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
               </style>
               <script src="${window.location.origin}/libs/live2d.min.js"></script>
               <script src="${window.location.origin}/live2d/core/live2dcubismcore.min.js"></script>
+              <script src="${window.location.origin}/libs/pixi.min.js"></script>
+              <script src="${window.location.origin}/libs/pixi-live2d-display.min.js"></script>
             </head>
             <body>
               <canvas id="live2d-canvas"></canvas>
@@ -90,21 +92,85 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                 // 简单的Live2D模型加载器
                 window.addEventListener('DOMContentLoaded', async () => {
                   try {
+                    // 检查WebGL兼容性
                     const canvas = document.getElementById('live2d-canvas');
+                    let gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    
+                    if (!gl) {
+                      throw new Error('WebGL不可用。您的浏览器可能不支持WebGL或WebGL已被禁用。');
+                    }
+                    
+                    // 检查PIXI是否可用
+                    if (!window.PIXI) {
+                      throw new Error('PIXI.js未加载。请确保PIXI库已正确加载。');
+                    }
+                    
+                    // 设置PIXI最大WebGL上下文设置
+                    // 解决"Invalid value of '0' passed to 'checkMaxIfStatementsInShader'"错误
+                    PIXI.settings.PRECISION_FRAGMENT = PIXI.PRECISION.HIGH;
+                    PIXI.settings.SPRITE_MAX_TEXTURES = Math.min(PIXI.settings.SPRITE_MAX_TEXTURES, 16);
+                    
+                    // 设置canvas尺寸
                     canvas.width = ${width};
                     canvas.height = ${height};
         
                     // 通知父窗口模型开始加载
                     window.parent.postMessage({ type: 'live2d-loading', message: '开始加载模型' }, '*');
                     
-                    // 加载模型（使用第三方库或自定义代码）
-                    // 这里只是一个占位符，实际实现取决于您使用的Live2D库
+                    // 创建PIXI应用
                     const modelPath = '${fullModelPath}';
+                    
+                    // 创建PIXI应用
+                    const app = new PIXI.Application({
+                      view: canvas,
+                      width: ${width},
+                      height: ${height},
+                      transparent: true,
+                      autoStart: true,
+                      antialias: true,
+                      preserveDrawingBuffer: true,
+                      powerPreference: "high-performance"
+                    });
+                    
+                    // 异步加载Live2D模型
+                    let model;
+                    try {
+                      window.parent.postMessage({ type: 'live2d-loading', message: '开始加载PIXI-Live2D模型' }, '*');
+                      
+                      // 设置PIXI-Live2D-Display环境
+                      if (window.Live2DModel) {
+                        // 等待模型加载
+                        window.Live2DModel.registerTicker(PIXI.Ticker);
+                        model = await window.Live2DModel.from(modelPath, { autoInteract: false });
+                        
+                        // 调整模型尺寸和位置
+                        const modelWidth = model.width;
+                        const modelHeight = model.height;
+                        const scale = Math.min(${width} / modelWidth, ${height} / modelHeight);
+                        
+                        model.scale.set(scale, scale);
+                        model.position.set(${width} / 2, ${height} / 2);
+                        model.anchor.set(0.5, 0.5);
+                        
+                        // 添加到舞台
+                        app.stage.addChild(model);
+                      } else {
+                        throw new Error('PIXI-Live2D-Display未加载');
+                      }
+                    } catch (modelError) {
+                      console.error('加载模型失败:', modelError);
+                      window.parent.postMessage({ 
+                        type: 'live2d-error', 
+                        message: '模型加载失败', 
+                        error: modelError.message 
+                      }, '*');
+                      return;
+                    }
     
                     // 添加接收命令的监听器
                     window.addEventListener('message', (event) => {
                       const data = event.data;
-                      if (!data || !data.command) return;
+                      if (!data || !data.command || !model) return;
                       
                       try {
                         console.log('iframe接收到命令:', data.command, data);
@@ -112,18 +178,26 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                         // 处理表情命令
                         if (data.command === 'expression' && data.name) {
                           console.log('应用表情:', data.name);
-                          // 这里添加实际应用表情的代码
+                          if (model.internalModel && model.internalModel.setExpression) {
+                            model.internalModel.setExpression(data.name);
+                          } else if (model.expression) {
+                            model.expression(data.name);
+                          }
                         }
                         
                         // 处理动作命令
                         if (data.command === 'motion' && data.group) {
                           console.log('应用动作:', data.group, data.index || 0);
-                          // 这里添加实际应用动作的代码
-        }
-      } catch (error) {
+                          if (model.internalModel && model.internalModel.motion) {
+                            model.internalModel.motion(data.group, data.index || 0);
+                          } else if (model.motion) {
+                            model.motion(data.group, data.index || 0);
+                          }
+                        }
+                      } catch (error) {
                         console.error('处理命令时出错:', error);
-      }
-    });
+                      }
+                    });
 
                     // 通知父窗口模型加载成功
                     window.parent.postMessage({ 
@@ -131,13 +205,6 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                       message: '模型加载成功',
                       modelPath: modelPath
                     }, '*');
-      
-                    // 简单的动画循环
-                    function animate() {
-                      // 在这里添加模型更新代码
-                      requestAnimationFrame(animate);
-                    }
-                    animate();
                     
                   } catch (error) {
                     console.error('模型加载失败:', error);

@@ -47,6 +47,8 @@ const ApiSettings = ({ isOpen, onClose, onSave }) => {
             <label htmlFor="model-select">选择模型:</label>
             <select
               id="model-select"
+              name="model-select"
+              autocomplete="off"
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
             >
