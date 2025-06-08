@@ -5,7 +5,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  z-index: 1;
+  z-index: -1;
 }
 
 .background-media {
@@ -22,5 +22,5 @@
   width: 100%;
   height: 100%;
   background: radial-gradient(circle at center, rgba(20, 20, 40, 0.4) 0%, rgba(10, 10, 20, 0.7) 100%);
-  z-index: 2;
+  z-index: -1;
 } 

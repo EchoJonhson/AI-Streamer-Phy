@@ -5,9 +5,22 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>虚拟AI主播</title>
+  
+  <!-- Polyfill for older browsers -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver%2CResizeObserver"></script>
+  
   <!-- 预加载Live2D核心库 -->
   <script src="/live2d/core/live2dcubismcore.min.js"></script>
   <script src="/live2d/core/live2d.min.js"></script>
+  
+  <!-- 调试状态检查 -->
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      console.log('Live2D核心库状态检查:');
+      console.log('Live2DCubismCore:', window.Live2DCubismCore ? '已加载' : '未加载');
+      console.log('Live2D:', window.Live2D ? '已加载' : '未加载');
+    });
+  </script>
 </head>
 <body>
   <div id="root"></div>

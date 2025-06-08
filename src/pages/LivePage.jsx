@@ -122,6 +122,15 @@ const LivePage = () => {
           {/* 添加背景 */}
           <LiveBackground type={backgroundType} src={backgroundSrc} />
           
+          {/* 集成Live2D模型组件 */}
+          {modelPath && (
+            <Live2DModelComponent 
+              modelPath={modelPath}
+              width={window.innerWidth * 0.6}
+              height={window.innerHeight - 150}
+            />
+          )}
+          
           {/* 调试信息 */}
           {debugMode && (
             <div className="debug-info">
@@ -136,15 +145,6 @@ const LivePage = () => {
             <button className="debug-toggle" onClick={toggleDebugMode}>
               显示调试信息
             </button>
-          )}
-          
-          {/* 集成Live2D模型组件 */}
-          {modelPath && (
-            <Live2DModelComponent 
-              modelPath={modelPath}
-              width={window.innerWidth * 0.6}
-              height={window.innerHeight - 150}
-            />
           )}
         </div>
         

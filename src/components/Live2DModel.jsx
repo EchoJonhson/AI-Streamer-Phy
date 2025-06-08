@@ -198,7 +198,9 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
           // 尝试预加载第一个纹理文件
           if (texturePaths.length > 0) {
             const texturePath = texturePaths[0];
-            const textureUrl = new URL(texturePath, new URL(fullModelPath, window.location.href)).href;
+            // 从模型路径中提取基础目录
+            const baseUrl = fullModelPath.substring(0, fullModelPath.lastIndexOf('/') + 1);
+            const textureUrl = `${baseUrl}${texturePath}`;
             console.log('尝试加载纹理:', textureUrl);
             
             const textureResponse = await fetch(textureUrl);
@@ -218,6 +220,11 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
       
       // 从指定路径加载模型
       console.log('开始使用Live2DModel.from加载模型');
+      
+      // 设置PIXI加载器基础路径
+      PIXI.Loader.shared.baseUrl = fullModelPath.substring(0, fullModelPath.lastIndexOf('/') + 1);
+      console.log('设置PIXI Loader基础路径:', PIXI.Loader.shared.baseUrl);
+      
       const model = await Live2DModel.from(fullModelPath, {
         autoInteract: false, // 关闭自动交互，我们将自定义交互
         autoUpdate: true,
@@ -440,10 +447,10 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
   };
 
   return (
-    <div className="live2d-container" ref={containerRef}>
-      <canvas ref={canvasRef} className="live2d-canvas" />
+    <div className="live2d-container" ref={containerRef} style={{ zIndex: 20 }}>
+      <canvas ref={canvasRef} className="live2d-canvas" style={{ zIndex: 30 }} />
       {loadingState !== '模型加载成功' && (
-        <div className="loading-overlay">
+        <div className="loading-overlay" style={{ zIndex: 40 }}>
           <div className="loading-text">{loadingState}</div>
           {errorDetails && (
             <div className="error-details">
