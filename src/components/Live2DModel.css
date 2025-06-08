@@ -8,6 +8,8 @@
   align-items: center;
   background-color: transparent !important;
   z-index: 10;
+  transform: translateZ(0); /* 启用硬件加速 */
+  will-change: transform; /* 提示浏览器该元素将会变化 */
 }
 
 .live2d-canvas {
@@ -18,6 +20,10 @@
   background-color: transparent !important;
   pointer-events: auto;
   z-index: 20;
+  transform: translateZ(0); /* 启用硬件加速 */
+  will-change: transform; /* 提示浏览器该元素将会变化 */
+  image-rendering: -webkit-optimize-contrast; /* 提高图像渲染质量 */
+  image-rendering: crisp-edges;
 }
 
 .loading-overlay {

@@ -15,6 +15,25 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     chunkSizeWarningLimit: 1600,
+    // 优化构建配置
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false, // 保留console以便调试
+        drop_debugger: true,
+      }
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'pixi': ['pixi.js'],
+          'live2d': ['pixi-live2d-display'],
+          'vendor': ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+    // 复制live2d核心库到输出目录
+    copyPublicDir: true,
   },
   server: {
     port: 5173,

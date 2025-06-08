@@ -7,28 +7,42 @@
     <meta name="description" content="虚拟AI主播 - 基于AI技术的虚拟主播互动平台" />
     <meta name="keywords" content="虚拟主播,AI,Live2D,互动,直播" />
     <title>虚拟AI主播</title>
-    <!-- Live2D Cubism 核心库 -->
-    <script src="./live2d/core/live2dcubismcore.min.js"></script>
-    <script src="./live2d/core/live2d.min.js"></script>
-    <!-- 直接从CDN加载Cubism 2运行时库 -->
-    <script src="https://cdn.jsdelivr.net/gh/dylanNew/live2d/webgl/Live2D/lib/live2d.min.js"></script>
-    <!-- 加载本地备份 -->
-    <script src="/libs/live2d.min.js"></script>
-    <!-- 加载Cubism 4运行时库 -->
-    <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+    <!-- Live2D Cubism 核心库 - 优化加载顺序 -->
+    <!-- 本地核心库优先 -->
+    <script src="./live2d/core/live2dcubismcore.min.js" defer></script>
+    
+    <!-- 备用CDN加载 -->
+    <script>
+      // 检测本地脚本是否加载成功，如果失败则从CDN加载
+      window.addEventListener('error', function(e) {
+        var src = e.target.src || '';
+        if (src.includes('live2dcubismcore.min.js')) {
+          console.warn('本地Live2D核心库加载失败，尝试从CDN加载');
+          var script = document.createElement('script');
+          script.src = 'https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js';
+          document.head.appendChild(script);
+        }
+      }, true);
+    </script>
+    
+    <!-- 预加载脚本 -->
+    <script src="./live2d-preload.js" defer></script>
+    
+    <!-- 初始化检查 -->
     <script>
       // 检查Cubism运行时是否加载成功
       window.addEventListener('DOMContentLoaded', function() {
-        console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
-        console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
-        
-        // 如果核心库未加载，尝试再次加载
-        if (!window.Live2DCubismCore) {
-          console.warn('尝试再次加载Cubism核心库...');
-          var script = document.createElement('script');
-          script.src = './live2d/core/live2dcubismcore.min.js';
-          document.head.appendChild(script);
-        }
+        setTimeout(function() {
+          console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
+          
+          // 如果核心库未加载，尝试再次加载
+          if (!window.Live2DCubismCore) {
+            console.warn('DOMContentLoaded后核心库未加载，尝试再次加载...');
+            var script = document.createElement('script');
+            script.src = './live2d/core/live2dcubismcore.min.js';
+            document.head.appendChild(script);
+          }
+        }, 500); // 延迟检查，确保有足够时间加载
       });
     </script>
   </head>
