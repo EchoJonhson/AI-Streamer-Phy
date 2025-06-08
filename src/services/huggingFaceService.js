@@ -88,16 +88,43 @@ export const sendMessageToHuggingFace = async (message, username, chatHistory = 
         throw new Error(`API请求失败: ${response.status} - ${errorText}`);
       }
       
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.warn('API响应不是有效的JSON格式:', jsonError);
+        // 如果响应不是JSON，使用纯文本
+        const text = await response.text();
+        data = { generated_text: text || '服务器返回了非JSON响应' };
+      }
+      
       return { content: data.generated_text || '无响应' };
     } catch (fetchError) {
-      console.warn('API请求失败，使用备用响应:', fetchError);
+      console.warn('API请求失败，尝试兼容模式:', fetchError);
       
-      // 在生产环境中，我们应该使用服务器端代理
-      // 但作为临时解决方案，我们使用模拟数据
-      return { 
-        content: '由于CORS限制或网络问题，无法连接到API服务器。这是一个模拟响应。您可以尝试使用模拟API模式，或配置正确的CORS头。' 
-      };
+      // 尝试备用模式: 使用no-cors模式
+      try {
+        console.log('尝试使用no-cors模式请求API');
+        // 注意: no-cors模式只能用于简单请求，且无法读取响应内容
+        await fetch(WORKER_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+        
+        return { 
+          content: '请求已发送，但由于CORS限制，无法读取响应。这是一个模拟响应: "我是一个AI助手，很高兴为您服务。您可以问我任何问题，我会尽力回答。"' 
+        };
+      } catch (noCorsError) {
+        console.warn('无法连接到API服务器:', noCorsError);
+        // 使用模拟数据
+        return { 
+          content: '无法连接到API服务器。这是一个模拟响应: "我是一个AI助手，很高兴为您服务。您可以问我任何问题，我会尽力回答。"' 
+        };
+      }
     }
   } catch (error) {
     console.error('Hugging Face API调用失败:', error);
