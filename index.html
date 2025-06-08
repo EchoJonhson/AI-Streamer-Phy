@@ -7,6 +7,36 @@
     <meta name="description" content="虚拟AI主播 - 基于AI技术的虚拟主播互动平台" />
     <meta name="keywords" content="虚拟主播,AI,Live2D,互动,直播" />
     <title>虚拟AI主播</title>
+    <!-- WebGL兼容性修复 -->
+    <script>
+      // 全局错误处理器
+      window.addEventListener('error', function(e) {
+        console.warn('全局错误捕获:', e.message);
+        
+        // 处理WebGL相关错误
+        if (e.message && (
+            e.message.includes('WebGL') || 
+            e.message.includes('PIXI') || 
+            e.message.includes('shader') ||
+            e.message.includes('checkMaxIfStatementsInShader')
+        )) {
+          console.warn('检测到WebGL相关错误，尝试修复');
+          
+          // 修复checkMaxIfStatementsInShader问题
+          if (window.PIXI && window.PIXI.glCore && window.PIXI.glCore.shader) {
+            window.PIXI.glCore.shader.checkMaxIfStatementsInShader = function() {
+              return 0;
+            };
+          }
+          
+          // 修复WebGL上下文问题
+          if (window.PIXI && window.PIXI.settings) {
+            window.PIXI.settings.PREFER_ENV = 1; // PIXI.ENV.WEBGL
+          }
+        }
+      }, true);
+    </script>
+    
     <!-- Live2D Cubism 2 运行时 -->
     <script src="./libs/live2d.min.js" type="text/javascript"></script>
     

@@ -13,6 +13,13 @@ PIXI.LoaderResource.setExtensionXhrType('json', PIXI.LoaderResource.XHR_RESPONSE
 // 设置全局CORS模式
 PIXI.settings.CORS_MODE = 'anonymous';
 
+// 禁用PIXI的WebGL警告
+PIXI.utils.skipHello();
+
+// 设置PIXI的默认渲染器选项
+PIXI.settings.PREFER_ENV = PIXI.ENV.WEBGL2;
+PIXI.settings.PRECISION_FRAGMENT = PIXI.PRECISION.HIGH;
+
 // 确保live2dcubismcore.min.js已经加载
 const ensureCubismCoreLoaded = async () => {
   console.log('检查Live2DCubismCore是否已加载');
@@ -157,7 +164,13 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       try {
         // 初始化PIXI应用
         console.log('初始化PIXI应用，宽度:', width, '高度:', height);
-        app = new PIXI.Application({
+        
+        // 检测WebGL支持
+        const isWebGLSupported = PIXI.utils.isWebGLSupported();
+        console.log('WebGL支持状态:', isWebGLSupported ? '支持' : '不支持');
+        
+        // 创建应用程序选项
+        const appOptions = {
           view: canvasRef.current,
           autoStart: true,
           width,
@@ -165,8 +178,38 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
           backgroundColor: 0x00000000, // 完全透明背景
           resolution: window.devicePixelRatio || 1,
           autoDensity: true,
-          backgroundAlpha: 0, // 使用backgroundAlpha替代transparent
-        });
+          backgroundAlpha: 0,
+          // 使用更安全的渲染器选项
+          forceCanvas: !isWebGLSupported, // 如果不支持WebGL则使用Canvas
+        };
+        
+        // 添加WebGL特定选项
+        if (isWebGLSupported) {
+          appOptions.powerPreference = 'high-performance';
+          appOptions.antialias = true;
+          appOptions.context = {
+            // 防止WebGL上下文丢失
+            loseContext: false,
+            // 确保着色器中的if语句数量不会导致问题
+            webgl: {
+              preserveDrawingBuffer: true,
+              stencil: true,
+              antialias: true,
+              premultipliedAlpha: true,
+              alpha: true
+            }
+          };
+        }
+        
+        // 创建PIXI应用
+        try {
+          app = new PIXI.Application(appOptions);
+        } catch (pixiError) {
+          console.error('PIXI应用创建失败，尝试使用Canvas渲染器:', pixiError);
+          // 如果WebGL初始化失败，强制使用Canvas
+          appOptions.forceCanvas = true;
+          app = new PIXI.Application(appOptions);
+        }
         
         appRef.current = app;
         
@@ -287,7 +330,8 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       console.log('使用配置加载模型');
       
       // 设置模型加载配置
-      const model = await Live2DModel.from(fullModelPath, {
+      console.log('准备加载模型，使用以下配置:');
+      const modelOptions = {
         autoInteract: false,
         motionPreload: true,
         // 明确指定同时支持Cubism 2和Cubism 4
@@ -295,17 +339,70 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
         cubism4: true, // 启用Cubism 4支持
         // 注册PIXI的Ticker
         autoUpdate: false, // 禁用自动更新，使用我们自己的更新函数
-      });
+        // 渲染器相关设置
+        gl: app.renderer.gl,
+        renderer: app.renderer,
+        // 优化选项
+        asyncInit: true, // 异步初始化
+        idleMotionGroup: 'idle', // 默认空闲动作组
+        // 纹理选项
+        ignoreTexture: false,
+        // 错误处理
+        onError: (e) => {
+          console.error('模型加载错误:', e);
+          setErrorDetails(`模型加载错误: ${e.message || e}`);
+        }
+      };
+      
+      console.log('模型加载选项:', modelOptions);
+      
+      // 尝试加载模型
+      let model;
+      try {
+        model = await Live2DModel.from(fullModelPath, modelOptions);
+      } catch (modelError) {
+        console.error('模型加载失败，尝试使用备用配置:', modelError);
+        
+        // 尝试使用简化配置重新加载
+        try {
+          const fallbackOptions = {
+            autoInteract: false,
+            motionPreload: true,
+            cubism2: true,
+            cubism4: true,
+            autoUpdate: false
+          };
+          
+          console.log('使用备用配置尝试加载:', fallbackOptions);
+          model = await Live2DModel.from(fullModelPath, fallbackOptions);
+        } catch (fallbackError) {
+          console.error('备用配置加载也失败:', fallbackError);
+          throw fallbackError;
+        }
+      }
       
       // 手动注册更新函数到PIXI的Ticker
       if (app && app.ticker) {
+        // 移除之前的ticker（如果有）
+        if (tickerRef.current) {
+          app.ticker.remove(tickerRef.current);
+        }
+        
         const tickerFunction = (delta) => {
-          if (model && !model.destroyed) {
-            model.update(delta);
+          try {
+            if (model && !model.destroyed) {
+              model.update(delta);
+            }
+          } catch (updateError) {
+            console.error('模型更新错误:', updateError);
+            // 出错时不要抛出异常，只记录错误
           }
         };
+        
         app.ticker.add(tickerFunction);
         tickerRef.current = tickerFunction;
+        
+        console.log('已添加模型更新函数到PIXI Ticker');
       }
       
       console.log('模型加载成功:', model);

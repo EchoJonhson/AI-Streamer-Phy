@@ -2,6 +2,35 @@
 (function() {
   console.log('开始预加载Live2D核心库');
   
+  // WebGL兼容性检查和修复
+  function fixWebGLCompatibility() {
+    // 修复checkMaxIfStatementsInShader问题
+    if (window.PIXI && window.PIXI.glCore && window.PIXI.glCore.shader) {
+      const originalCheckMaxIfStatementsInShader = window.PIXI.glCore.shader.checkMaxIfStatementsInShader;
+      window.PIXI.glCore.shader.checkMaxIfStatementsInShader = function(shader) {
+        try {
+          return originalCheckMaxIfStatementsInShader.call(this, shader);
+        } catch (e) {
+          console.warn('WebGL着色器检查失败，使用默认值:', e);
+          return 0;
+        }
+      };
+    }
+    
+    // 为PIXI.js添加polyfill
+    if (window.PIXI) {
+      // 确保PIXI.utils存在
+      if (!window.PIXI.utils) {
+        window.PIXI.utils = {};
+      }
+      
+      // 添加skipHello方法（如果不存在）
+      if (!window.PIXI.utils.skipHello) {
+        window.PIXI.utils.skipHello = function() {};
+      }
+    }
+  }
+  
   // 检查是否已加载
   if (window.Live2DCubismCore) {
     console.log('Live2DCubismCore已加载');
@@ -60,12 +89,17 @@
         await loadLive2D();
         // 再加载Cubism 4核心库
         await loadCubismCore();
+        // 应用WebGL兼容性修复
+        fixWebGLCompatibility();
       } catch (err) {
         console.warn('预加载失败，将在组件中重试', err);
       }
     });
   } else {
-    Promise.all([loadLive2D(), loadCubismCore()]).catch(err => {
+    Promise.all([loadLive2D(), loadCubismCore()]).then(() => {
+      // 应用WebGL兼容性修复
+      fixWebGLCompatibility();
+    }).catch(err => {
       console.warn('预加载失败，将在组件中重试', err);
     });
   }
