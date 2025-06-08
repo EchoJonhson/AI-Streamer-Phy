@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import './MainLayout.css';
 
-const MainLayout = ({ children }) => {
+const MainLayout = () => {
   return (
     <div className="main-layout">
       <header className="header">
@@ -16,7 +16,7 @@ const MainLayout = ({ children }) => {
         </nav>
       </header>
       <main className="content">
-        {children}
+        <Outlet />
       </main>
       <footer className="footer">
         <p>© {new Date().getFullYear()} 虚拟AI主播 - 基于AI技术的虚拟主播平台</p>

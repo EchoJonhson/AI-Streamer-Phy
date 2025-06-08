@@ -11,7 +11,7 @@ PIXI.LoaderResource.setExtensionLoadType('json', PIXI.LoaderResource.LOAD_TYPE.X
 PIXI.LoaderResource.setExtensionXhrType('json', PIXI.LoaderResource.XHR_RESPONSE_TYPE.JSON);
 
 // 设置全局CORS模式
-PIXI.settings.CORS_MODE = 'no-cors';
+PIXI.settings.CORS_MODE = 'anonymous';
 
 const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
   const canvasRef = useRef(null);
@@ -77,12 +77,24 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         setLoadingState('加载模型中...');
         console.log('开始加载模型:', modelPath);
         
-        // 检查模型文件是否存在
-        try {
-          const response = await fetch(modelPath, { mode: 'no-cors' });
-          console.log('模型文件请求状态:', response.status, response.statusText);
-        } catch (fetchError) {
-          console.warn('模型文件预检失败，但将继续尝试加载:', fetchError);
+        // 确保live2dcubismcore.min.js已经加载
+        if (!window.Live2DCubismCore) {
+          const script = document.createElement('script');
+          script.src = './live2d/core/live2dcubismcore.min.js';
+          script.async = true;
+          document.body.appendChild(script);
+          
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('无法加载Live2D核心库'));
+            
+            // 设置超时
+            setTimeout(() => {
+              if (!window.Live2DCubismCore) {
+                reject(new Error('加载Live2D核心库超时'));
+              }
+            }, 5000);
+          });
         }
         
         // 从指定路径加载模型

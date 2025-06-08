@@ -8,17 +8,30 @@ const LivePage = () => {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [modelPath, setModelPath] = useState('/live2d/models/wuwuwu/wuwuwu.model3.json');
+  const [modelPath, setModelPath] = useState('./live2d/models/wuwuwu/wuwuwu.model3.json');
   const [modelLoading, setModelLoading] = useState(false);
   const [backgroundType, setBackgroundType] = useState('image'); // 'video' or 'image'
-  const [backgroundSrc, setBackgroundSrc] = useState('/backgrounds/custom-bg.png');
+  const [backgroundSrc, setBackgroundSrc] = useState('./backgrounds/custom-bg.png');
   const navigate = useNavigate();
 
   // 检查用户是否已登录
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
     if (!storedUsername) {
-      navigate('/');
+      // 如果没有用户名，设置一个默认值而不是跳转
+      const defaultName = '游客' + Math.floor(Math.random() * 1000);
+      localStorage.setItem('username', defaultName);
+      setUsername(defaultName);
+      
+      // 添加欢迎消息
+      setMessages([
+        {
+          id: Date.now(),
+          sender: 'AI主播',
+          content: `欢迎 ${defaultName} 来到直播间！我是你的虚拟主播，很高兴见到你~`,
+          timestamp: new Date().toLocaleTimeString()
+        }
+      ]);
     } else {
       setUsername(storedUsername);
       // 添加欢迎消息
@@ -38,12 +51,8 @@ const LivePage = () => {
     const checkModelExists = async () => {
       try {
         setModelLoading(true);
-        const response = await fetch(modelPath, { method: 'HEAD' });
-        if (!response.ok) {
-          console.error(`模型文件不存在: ${modelPath}, 状态: ${response.status}`);
-        } else {
-          console.log(`模型文件存在: ${modelPath}`);
-        }
+        console.log(`尝试加载模型: ${modelPath}`);
+        // 不使用HEAD请求，因为可能会有CORS问题
       } catch (error) {
         console.error(`检查模型文件失败: ${error.message}`);
       } finally {

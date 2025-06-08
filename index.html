@@ -2,15 +2,14 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
     <meta name="description" content="虚拟AI主播 - 基于AI技术的虚拟主播互动平台" />
     <meta name="keywords" content="虚拟主播,AI,Live2D,互动,直播" />
     <title>虚拟AI主播</title>
     <!-- Live2D Cubism 核心库 -->
-    <script src="/live2d/core/live2dcubismcore.min.js"></script>
-    <script src="/live2d/core/live2d.min.js"></script>
+    <script src="./live2d/core/live2dcubismcore.min.js"></script>
+    <script src="./live2d/core/live2d.min.js"></script>
     <!-- 直接从CDN加载Cubism 2运行时库 -->
     <script src="https://cdn.jsdelivr.net/gh/dylanNew/live2d/webgl/Live2D/lib/live2d.min.js"></script>
     <!-- 加载本地备份 -->
@@ -18,15 +17,16 @@
     <!-- 加载Cubism 4运行时库 -->
     <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
     <script>
-      // 检查Cubism 2运行时是否加载成功
+      // 检查Cubism运行时是否加载成功
       window.addEventListener('DOMContentLoaded', function() {
         console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
         console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
         
-        if (!window.Live2D || !window.Live2D.init) {
-          console.warn('尝试从备用CDN加载Cubism 2运行时...');
+        // 如果核心库未加载，尝试再次加载
+        if (!window.Live2DCubismCore) {
+          console.warn('尝试再次加载Cubism核心库...');
           var script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/live2d-lib@1.0.1/lib/live2d.min.js';
+          script.src = './live2d/core/live2dcubismcore.min.js';
           document.head.appendChild(script);
         }
       });
@@ -34,6 +34,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="./src/main.jsx"></script>
   </body>
 </html>

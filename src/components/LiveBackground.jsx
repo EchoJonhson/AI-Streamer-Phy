@@ -5,8 +5,8 @@ const LiveBackground = ({ type = 'video', src }) => {
   if (!src) {
     // 默认背景
     src = type === 'video' 
-      ? '/backgrounds/default-bg.mp4' 
-      : '/backgrounds/default-bg.gif';
+      ? './backgrounds/default-bg.mp4' 
+      : './backgrounds/default-bg.gif';
   }
 
   return (
