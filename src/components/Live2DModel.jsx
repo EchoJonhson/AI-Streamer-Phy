@@ -3,7 +3,7 @@ import * as PIXI from 'pixi.js';
 import { Live2DModel } from 'pixi-live2d-display';
 import './Live2DModel.css';
 
-// 将PIXI暴露给window，以便pixi-live2d-display能够自动更新Live2D模型
+// 将PIXI暴露给window，以便pixi-live2d-display能够使用
 window.PIXI = PIXI;
 
 // 配置PIXI加载器，设置CORS模式
@@ -54,12 +54,13 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
   const canvasRef = useRef(null);
   const appRef = useRef(null);
   const modelRef = useRef(null);
+  const tickerRef = useRef(null);
   const [loadingState, setLoadingState] = useState('初始化中...');
   const [errorDetails, setErrorDetails] = useState('');
   const [resolvedModelPath, setResolvedModelPath] = useState('');
   const containerRef = useRef(null);
-  const onMouseMoveRef = useRef(null); // 用于存储事件处理函数引用，以便清理
-  const blinkTimerRef = useRef(null); // 用于存储眨眼计时器
+  const onMouseMoveRef = useRef(null);
+  const blinkTimerRef = useRef(null);
   
   // 用于平滑过渡的目标值和当前值
   const targetValuesRef = useRef({
@@ -163,6 +164,12 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         blinkTimerRef.current = null;
       }
       
+      // 移除ticker
+      if (tickerRef.current && appRef.current && appRef.current.ticker) {
+        appRef.current.ticker.remove(tickerRef.current);
+        tickerRef.current = null;
+      }
+      
       // 销毁PIXI应用
       if (appRef.current) {
         appRef.current.destroy(true, { children: true });
@@ -231,23 +238,13 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         await ensureCubismCoreLoaded();
       }
       
-      // 注册PIXI Ticker
-      try {
-        console.log('注册PIXI Ticker');
-        if (typeof Live2DModel.registerTicker === 'function') {
-          Live2DModel.registerTicker(PIXI.Ticker.shared);
-        } else {
-          console.warn('Live2DModel.registerTicker不是一个函数');
-        }
-      } catch (tickerError) {
-        console.error('注册Ticker失败:', tickerError);
-      }
-      
-      // 加载模型，禁用autoUpdate以避免错误
+      // 不使用registerTicker，避免autoUpdate相关问题
       console.log('使用配置加载模型');
+      
+      // 完全避免使用autoUpdate属性
       const model = await Live2DModel.from(fullModelPath, {
-        autoInteract: false, // 关闭自动交互，我们将自定义交互
-        autoUpdate: false, // 禁用自动更新，避免错误
+        autoInteract: false,
+        // 不设置autoUpdate属性
         motionPreload: true,
       });
       
@@ -373,15 +370,13 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
     // 添加鼠标移动事件监听器
     document.addEventListener('mousemove', onMouseMove);
     
-    // 添加清理函数到app.ticker，确保在每一帧更新模型
-    app.ticker.add((delta) => {
-      if (!model || !model.internalModel) return;
+    // 创建自定义更新函数
+    const updateFunction = (delta) => {
+      if (!model) return;
       
       try {
         const internalModel = model.internalModel;
-        const coreModel = internalModel && internalModel.coreModel;
-        
-        if (!coreModel) return;
+        if (!internalModel) return;
         
         // 平滑过渡到目标值
         const current = currentValuesRef.current;
@@ -408,18 +403,15 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         // 安全地设置参数值
         const safeSetParam = (paramId, value) => {
           try {
-            // 检查参数ID是否有效
-            if (typeof internalModel.getParamIndex === 'function') {
-              const index = internalModel.getParamIndex(paramId);
-              if (index !== -1 && typeof internalModel.setParam === 'function') {
-                internalModel.setParam(paramId, value);
-              }
-            } else if (coreModel && typeof coreModel.setParameterValueById === 'function') {
-              coreModel.setParameterValueById(paramId, value);
+            if (internalModel.coreModel && typeof internalModel.coreModel.setParameterValueById === 'function') {
+              internalModel.coreModel.setParameterValueById(paramId, value);
+            } else if (typeof internalModel.setParameterValueById === 'function') {
+              internalModel.setParameterValueById(paramId, value);
+            } else if (typeof internalModel.setParam === 'function') {
+              internalModel.setParam(paramId, value);
             }
           } catch (e) {
             // 忽略参数设置错误
-            console.debug(`设置参数 ${paramId} 失败:`, e);
           }
         };
         
@@ -463,22 +455,11 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
           safeSetParam('ParamEyeROpen', 1 - blink.value);
         }
         
-        // 确保物理效果正常工作
+        // 手动更新模型
         try {
-          if (internalModel.motionManager && typeof internalModel.motionManager.update === 'function') {
-            internalModel.motionManager.update();
-          }
-        } catch (motionError) {
-          console.debug('更新动作管理器时出错:', motionError);
-        }
-        
-        // 更新模型 - 添加更多安全检查
-        try {
+          // 尝试直接调用模型的update方法
           if (typeof model.update === 'function') {
-            model.update(app.ticker.deltaMS / 1000);
-          } else if (internalModel && typeof internalModel.update === 'function') {
-            // 尝试直接更新内部模型
-            internalModel.update(app.ticker.deltaMS / 1000);
+            model.update(delta / 60); // 转换为秒
           }
         } catch (updateError) {
           console.warn('更新模型时出错:', updateError);
@@ -486,7 +467,13 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
       } catch (error) {
         console.warn('更新模型参数时出错:', error);
       }
-    });
+    };
+    
+    // 保存updateFunction引用以便清理
+    tickerRef.current = updateFunction;
+    
+    // 添加到ticker
+    app.ticker.add(updateFunction);
   };
 
   return (

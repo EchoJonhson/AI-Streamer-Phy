@@ -6,21 +6,21 @@ import * as PIXI from 'pixi.js';
 import { Live2DModel } from 'pixi-live2d-display';
 import './LivePage.css';
 
-// 初始化PIXI和Live2D环境
+// 初始化PIXI环境
 window.PIXI = PIXI;
 
 // 确保Live2D核心库已加载
 const ensureLive2DEnvironment = () => {
-  // 注册PIXI Ticker
-  if (Live2DModel && !Live2DModel.hasOwnProperty('tickerAdded')) {
-    console.log('注册PIXI Ticker');
-    Live2DModel.registerTicker(PIXI.Ticker.shared);
-    Live2DModel.tickerAdded = true;
-  }
+  // 不再注册PIXI Ticker，避免autoUpdate相关问题
   
   // 检查Cubism核心库是否已加载
   if (!window.Live2DCubismCore) {
     console.log('Cubism 4运行时状态: 未加载');
+    
+    // 尝试手动加载核心库
+    const script = document.createElement('script');
+    script.src = '/live2d/core/live2dcubismcore.min.js';
+    document.head.appendChild(script);
   } else {
     console.log('Cubism 4运行时状态: 已加载');
   }
