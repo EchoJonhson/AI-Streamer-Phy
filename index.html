@@ -71,12 +71,34 @@
       })();
     </script>
     
-    <!-- Live2D Cubism 2 运行时 -->
-    <script src="./libs/live2d.min.js" type="text/javascript"></script>
+    <!-- PIXI.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@5.3.3/dist/pixi.min.js"></script>
     
-    <!-- Live2D Cubism 核心库 - 优化加载顺序 -->
-    <!-- 本地核心库优先 -->
-    <script src="./live2d/core/live2dcubismcore.min.js" defer type="text/javascript"></script>
+    <!-- Live2D Cubism 2 运行时 -->
+    <script src="./libs/live2d.min.js"></script>
+    
+    <!-- Live2D Cubism 4 核心库 -->
+    <script src="./live2d/core/live2dcubismcore.min.js"></script>
+    
+    <!-- PIXI-Live2D-Display库 - 必须放在PIXI和Live2D核心库之后 -->
+    <script>
+      // 等待核心库加载完成后再加载PIXI-Live2D-Display
+      function loadPixiLive2DDisplay() {
+        if (window.PIXI && window.Live2DCubismCore) {
+          // 核心库已加载，加载PIXI-Live2D-Display
+          var script = document.createElement('script');
+          script.src = "https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js";
+          document.head.appendChild(script);
+          console.log('正在加载PIXI-Live2D-Display');
+        } else {
+          // 核心库尚未加载，延迟重试
+          setTimeout(loadPixiLive2DDisplay, 100);
+        }
+      }
+      
+      // 开始加载
+      setTimeout(loadPixiLive2DDisplay, 500);
+    </script>
     
     <!-- 备用CDN加载 -->
     <script>
@@ -92,14 +114,8 @@
       }, true);
     </script>
     
-    <!-- PIXI.js库 -->
-    <script src="https://cdn.jsdelivr.net/npm/pixi.js@5.3.3/dist/pixi.min.js"></script>
-    
-    <!-- PIXI-Live2D-Display库 -->
-    <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js"></script>
-    
     <!-- 预加载脚本 -->
-    <script src="./live2d-preload.js" defer type="text/javascript"></script>
+    <script src="./live2d-preload.js" defer></script>
     
     <!-- 初始化检查 -->
     <script>
@@ -107,15 +123,17 @@
       window.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
           console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
-        console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
-        
-        // 如果核心库未加载，尝试再次加载
-        if (!window.Live2DCubismCore) {
+          console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
+          console.log('PIXI.js状态:', window.PIXI ? '已加载' : '未加载');
+          console.log('PIXI-Live2D-Display状态:', window.PIXI && window.PIXI.live2d ? '已加载' : '未加载');
+          
+          // 如果核心库未加载，尝试再次加载
+          if (!window.Live2DCubismCore) {
             console.warn('DOMContentLoaded后核心库未加载，尝试再次加载...');
-          var script = document.createElement('script');
-          script.src = './live2d/core/live2dcubismcore.min.js';
-          document.head.appendChild(script);
-        }
+            var script = document.createElement('script');
+            script.src = './live2d/core/live2dcubismcore.min.js';
+            document.head.appendChild(script);
+          }
           
           // 如果Cubism 2运行时未加载，尝试再次加载
           if (!window.Live2D) {
@@ -124,7 +142,13 @@
             script.src = './libs/live2d.min.js';
             document.head.appendChild(script);
           }
-        }, 500); // 延迟检查，确保有足够时间加载
+          
+          // 如果PIXI-Live2D-Display未加载，尝试再次加载
+          if (!window.PIXI || !window.PIXI.live2d) {
+            console.warn('DOMContentLoaded后PIXI-Live2D-Display未加载，尝试再次加载...');
+            loadPixiLive2DDisplay();
+          }
+        }, 1000); // 延迟检查，确保有足够时间加载
       });
     </script>
   </head>

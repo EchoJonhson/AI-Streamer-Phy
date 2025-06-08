@@ -26,28 +26,55 @@ const Live2DModel = ({
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
+  const initAttemptRef = useRef(0);
 
   // 使用自定义钩子加载模型
   const { model, loading, error, fixModelPosition } = useLive2DModel(modelPath, { width, height });
+  
+  // 检查库是否已加载
+  const checkLibrariesLoaded = () => {
+    const pixiLoaded = !!window.PIXI;
+    const cubismCoreLoaded = !!window.Live2DCubismCore;
+    const live2dLoaded = !!window.Live2D;
+    const pixiLive2dLoaded = pixiLoaded && !!window.PIXI.live2d;
+    
+    console.log('库加载状态:', {
+      PIXI: pixiLoaded ? '已加载' : '未加载',
+      Live2DCubismCore: cubismCoreLoaded ? '已加载' : '未加载',
+      Live2D: live2dLoaded ? '已加载' : '未加载',
+      'PIXI-Live2D-Display': pixiLive2dLoaded ? '已加载' : '未加载'
+    });
+    
+    return pixiLoaded && cubismCoreLoaded && pixiLive2dLoaded;
+  };
 
   // 初始化PIXI应用
   useEffect(() => {
     if (!containerRef.current || isInitialized) return;
 
+    // 最多尝试初始化3次
+    if (initAttemptRef.current >= 3) {
+      console.error('初始化PIXI应用失败: 超过最大尝试次数');
+      onError('初始化PIXI应用失败: 超过最大尝试次数');
+      return;
+    }
+    
+    // 检查库是否已加载
+    if (!checkLibrariesLoaded()) {
+      // 如果库未加载，延迟重试
+      const retryDelay = 1000; // 1秒后重试
+      console.log(`库尚未完全加载，${retryDelay}ms后重试...`);
+      
+      initAttemptRef.current += 1;
+      setTimeout(() => {
+        // 强制重新渲染
+        setIsInitialized(false);
+      }, retryDelay);
+      
+      return;
+    }
+
     try {
-      // 检查必要的库是否已加载
-      if (!window.PIXI || !window.PIXI.Application) {
-        console.error('PIXI.js未加载');
-        onError('PIXI.js未加载');
-        return;
-      }
-
-      if (!window.PIXI.live2d || !window.PIXI.live2d.Live2DModel) {
-        console.error('PIXI-Live2D-Display未加载');
-        onError('PIXI-Live2D-Display未加载');
-        return;
-      }
-
       // 创建PIXI应用
       const app = new window.PIXI.Application({
         width,
@@ -63,13 +90,19 @@ const Live2DModel = ({
       appRef.current = app;
       
       // 设置全局变量以方便调试
-      window.Live2DModel = window.PIXI.live2d.Live2DModel;
+      window.pixiApp = app;
 
       setIsInitialized(true);
       console.log('PIXI应用已初始化');
     } catch (err) {
       console.error('初始化PIXI应用失败:', err);
       onError(`初始化PIXI应用失败: ${err.message}`);
+      
+      // 重试
+      initAttemptRef.current += 1;
+      setTimeout(() => {
+        setIsInitialized(false);
+      }, 1000);
     }
   }, [width, height, isInitialized, onError]);
 
@@ -109,8 +142,6 @@ const Live2DModel = ({
               model.internalModel.startRandomEyeBlink();
             }
             clearInterval(checkInternalModel);
-          } else {
-            console.log('模型的internalModel不存在');
           }
         }, 500);
         
