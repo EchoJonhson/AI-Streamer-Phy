@@ -1,8 +1,114 @@
-# 虚拟AI主播项目
+# 虚拟AI主播系统
 
-这是一个使用React和Vite构建的虚拟AI主播项目，包含Live2D模型展示和互动功能。
+这是一个基于React、Live2D和AI的虚拟主播系统，可以用于直播、虚拟助手等场景。
 
-[![部署状态](https://img.shields.io/badge/部署-Vercel-blue)](https://virtual-ai-streamer.vercel.app/)
+## 特性
+
+- 支持Live2D模型显示和动画
+- 集成AI对话功能
+- 语音合成
+- 直播模式
+- 响应式设计
+
+## 快速开始
+
+1. 克隆仓库
+```bash
+git clone https://github.com/yourusername/virtual-ai-streamer.git
+cd virtual-ai-streamer
+```
+
+2. 安装依赖
+```bash
+npm install
+```
+
+3. 启动开发服务器
+```bash
+npm run dev
+```
+
+## Cloudflare Worker部署
+
+为了安全地使用Hugging Face API，本项目使用Cloudflare Worker作为代理。按照以下步骤部署：
+
+1. 安装Wrangler CLI
+```bash
+npm install -g wrangler
+```
+
+2. 登录Cloudflare
+```bash
+wrangler login
+```
+
+3. 创建一个新的Worker
+```bash
+wrangler init my-hf-proxy
+```
+
+4. 复制`cloudflare-worker/worker.js`到新创建的Worker项目中
+
+5. 在worker.js中更新您的Hugging Face API密钥
+```js
+const HF_API_KEY = "YOUR_HUGGING_FACE_API_KEY";
+```
+
+6. 更新允许的域名列表
+```js
+const ALLOWED_ORIGINS = [
+  "https://your-domain.com",
+  "http://localhost:3000"
+];
+```
+
+7. 发布Worker
+```bash
+wrangler publish
+```
+
+8. 更新前端项目中的Worker URL
+```js
+// src/services/huggingFaceService.js
+const WORKER_URL = 'https://your-worker-name.your-account.workers.dev';
+```
+
+## 故障排除
+
+### Live2D模型不显示
+
+1. 检查浏览器控制台是否有错误
+2. 确认所有必要的Live2D库文件已加载:
+   - live2d.min.js
+   - live2dcubismcore.min.js
+   - pixi.min.js
+   - pixi-live2d-display.min.js
+
+### CORS错误
+
+如果遇到CORS错误：
+1. 确认Worker已正确部署
+2. 检查Worker URL是否正确
+3. 检查Worker中的ALLOWED_ORIGINS是否包含您的域名
+
+### 语音合成错误
+
+如果语音合成不工作：
+1. 确认浏览器支持Web Speech API
+2. 在语音设置中尝试不同的语音选项
+3. 可能需要用户交互后才能使用语音功能
+
+## API密钥安全
+
+**重要**：永远不要在前端代码中直接包含API密钥。本项目使用Cloudflare Worker来保护API密钥。
+
+## 贡献
+
+欢迎提交Pull Request或提出Issues。
+
+## 许可证
+
+MIT
 
 ## 功能特点
 
@@ -29,32 +135,6 @@
 
 项目已部署到Vercel，可通过以下链接访问：
 [虚拟AI主播](https://virtual-ai-streamer.vercel.app/)
-
-## 开发说明
-
-### 安装依赖
-
-```bash
-npm install
-```
-
-### 本地开发
-
-```bash
-npm run dev
-```
-
-### 构建项目
-
-```bash
-npm run build
-```
-
-## Live2D模型互动说明
-
-- 点击模型触发动作
-- 拖动模型改变位置
-- 滚轮缩放模型大小
 
 ## 项目结构
 

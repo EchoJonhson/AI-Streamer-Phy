@@ -7,7 +7,8 @@
 const DEFAULT_MODEL = 'OpenAssistant/oasst-sft-1-pythia-12b';
 
 // Cloudflare Worker URL - 替换为您的Worker URL
-const WORKER_URL = 'https://broad-surf-db28.3485573766.workers.dev';
+// 注意: 如果您创建了新的Worker，请更新此URL
+const WORKER_URL = 'https://your-new-worker-url.workers.dev';
 
 /**
  * 从本地存储获取API密钥

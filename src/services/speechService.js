@@ -34,7 +34,52 @@ export const speakText = (text, options = {}) => {
 
     // 如果指定了声音，则设置
     if (options.voice) {
-      utterance.voice = options.voice;
+      try {
+        // 检查是否是有效的SpeechSynthesisVoice对象
+        if (options.voice instanceof SpeechSynthesisVoice) {
+          utterance.voice = options.voice;
+        } else if (typeof options.voice === 'string') {
+          // 如果是字符串，尝试通过名称查找声音
+          const voices = window.speechSynthesis.getVoices();
+          const matchedVoice = voices.find(v => 
+            v.name === options.voice || 
+            v.voiceURI === options.voice ||
+            v.lang === options.voice
+          );
+          
+          if (matchedVoice) {
+            utterance.voice = matchedVoice;
+          } else {
+            console.warn(`未找到名为"${options.voice}"的声音，使用默认声音`);
+          }
+        } else {
+          console.warn('指定的声音不是有效的SpeechSynthesisVoice对象，使用默认声音');
+        }
+      } catch (voiceError) {
+        console.error('设置声音时出错:', voiceError);
+        // 继续使用默认声音
+      }
+    } else {
+      // 尝试找到匹配当前语言的声音
+      try {
+        const voices = window.speechSynthesis.getVoices();
+        const langVoices = voices.filter(voice => voice.lang.startsWith(utterance.lang.split('-')[0]));
+        
+        if (langVoices.length > 0) {
+          // 优先使用女声（通常名称中包含female或F）
+          const femaleVoice = langVoices.find(voice => 
+            voice.name.includes('female') || 
+            voice.name.includes('Female') || 
+            voice.name.includes('F') ||
+            voice.name.includes('女')
+          );
+          
+          utterance.voice = femaleVoice || langVoices[0];
+        }
+      } catch (error) {
+        console.warn('自动选择声音失败:', error);
+        // 继续使用默认声音
+      }
     }
 
     // 设置回调
