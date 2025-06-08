@@ -8,6 +8,8 @@ const DEFAULT_MODEL = 'OpenAssistant/oasst-sft-1-pythia-12b';
 
 // Cloudflare Worker URL - 替换为您的Worker URL
 // 注意: 如果您创建了新的Worker，请更新此URL
+// 临时使用模拟API模式，避免对实际API的依赖
+const USE_MOCK_API = true;
 const WORKER_URL = 'https://your-new-worker-url.workers.dev';
 
 /**
@@ -46,6 +48,22 @@ export const hasApiKey = () => {
  */
 export const sendMessageToHuggingFace = async (message, username, chatHistory = [], modelId = DEFAULT_MODEL) => {
   try {
+    // 如果启用了模拟API模式，直接返回模拟响应
+    if (USE_MOCK_API) {
+      console.log('使用模拟API模式');
+      const responses = [
+        `你好，${username || '用户'}！我是虚拟AI主播，很高兴为你服务。`,
+        `你的消息"${message}"已收到。作为AI虚拟主播，我可以陪你聊天、回答问题。`,
+        `这是一个模拟响应。在实际部署中，你需要配置Hugging Face API密钥和Cloudflare Worker。`,
+        `我正在思考你说的"${message}"。这是一个有趣的话题，我们可以继续讨论。`,
+        `谢谢你的提问！关于"${message}"，我有一些想法可以分享。`
+      ];
+      
+      // 随机选择一个响应
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      return { content: randomResponse };
+    }
+    
     // 构建对话历史
     const pastUserInputs = [];
     const generatedResponses = [];
