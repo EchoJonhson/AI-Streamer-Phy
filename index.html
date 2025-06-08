@@ -35,6 +35,40 @@
           }
         }
       }, true);
+      
+      // 修复getContextAttributes问题
+      (function() {
+        // 保存原始的getContext方法
+        const originalGetContext = HTMLCanvasElement.prototype.getContext;
+        
+        // 重写getContext方法
+        HTMLCanvasElement.prototype.getContext = function() {
+          const context = originalGetContext.apply(this, arguments);
+          
+          // 如果是WebGL上下文且没有getContextAttributes方法
+          if (context && (arguments[0] === 'webgl' || arguments[0] === 'webgl2') && !context.getContextAttributes) {
+            console.log('添加缺失的getContextAttributes方法');
+            // 添加缺失的getContextAttributes方法
+            context.getContextAttributes = function() {
+              return {
+                alpha: true,
+                antialias: true,
+                depth: true,
+                failIfMajorPerformanceCaveat: false,
+                powerPreference: 'default',
+                premultipliedAlpha: true,
+                preserveDrawingBuffer: false,
+                stencil: true,
+                desynchronized: false
+              };
+            };
+          }
+          
+          return context;
+        };
+        
+        console.log('已应用getContextAttributes polyfill');
+      })();
     </script>
     
     <!-- Live2D Cubism 2 运行时 -->

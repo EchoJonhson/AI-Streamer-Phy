@@ -165,11 +165,10 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
         // 初始化PIXI应用
         console.log('初始化PIXI应用，宽度:', width, '高度:', height);
         
-        // 检测WebGL支持
-        const isWebGLSupported = PIXI.utils.isWebGLSupported();
-        console.log('WebGL支持状态:', isWebGLSupported ? '支持' : '不支持');
+        // 直接使用Canvas渲染器，避免WebGL问题
+        console.log('强制使用Canvas渲染器，避免WebGL问题');
         
-        // 创建应用程序选项
+        // 创建简化的应用程序选项
         const appOptions = {
           view: canvasRef.current,
           autoStart: true,
@@ -179,36 +178,29 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
           resolution: window.devicePixelRatio || 1,
           autoDensity: true,
           backgroundAlpha: 0,
-          // 使用更安全的渲染器选项
-          forceCanvas: !isWebGLSupported, // 如果不支持WebGL则使用Canvas
+          // 强制使用Canvas渲染器
+          forceCanvas: true
         };
-        
-        // 添加WebGL特定选项
-        if (isWebGLSupported) {
-          appOptions.powerPreference = 'high-performance';
-          appOptions.antialias = true;
-          appOptions.context = {
-            // 防止WebGL上下文丢失
-            loseContext: false,
-            // 确保着色器中的if语句数量不会导致问题
-            webgl: {
-              preserveDrawingBuffer: true,
-              stencil: true,
-              antialias: true,
-              premultipliedAlpha: true,
-              alpha: true
-            }
-          };
-        }
         
         // 创建PIXI应用
         try {
+          // 确保使用最简单的初始化方式
           app = new PIXI.Application(appOptions);
         } catch (pixiError) {
-          console.error('PIXI应用创建失败，尝试使用Canvas渲染器:', pixiError);
-          // 如果WebGL初始化失败，强制使用Canvas
-          appOptions.forceCanvas = true;
-          app = new PIXI.Application(appOptions);
+          console.error('PIXI应用创建失败，尝试使用备用方法:', pixiError);
+          
+          try {
+            // 最基本的初始化方式
+            app = new PIXI.Application({
+              view: canvasRef.current,
+              width,
+              height,
+              forceCanvas: true
+            });
+          } catch (fallbackError) {
+            console.error('备用初始化也失败:', fallbackError);
+            throw new Error('无法创建PIXI应用程序');
+          }
         }
         
         appRef.current = app;
@@ -329,55 +321,48 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       // 不使用registerTicker，避免autoUpdate相关问题
       console.log('使用配置加载模型');
       
-      // 设置模型加载配置
-      console.log('准备加载模型，使用以下配置:');
-      const modelOptions = {
-        autoInteract: false,
-        motionPreload: true,
-        // 明确指定同时支持Cubism 2和Cubism 4
-        cubism2: true, // 启用Cubism 2支持
-        cubism4: true, // 启用Cubism 4支持
-        // 注册PIXI的Ticker
-        autoUpdate: false, // 禁用自动更新，使用我们自己的更新函数
-        // 渲染器相关设置
-        gl: app.renderer.gl,
-        renderer: app.renderer,
-        // 优化选项
-        asyncInit: true, // 异步初始化
-        idleMotionGroup: 'idle', // 默认空闲动作组
-        // 纹理选项
-        ignoreTexture: false,
-        // 错误处理
-        onError: (e) => {
-          console.error('模型加载错误:', e);
-          setErrorDetails(`模型加载错误: ${e.message || e}`);
-        }
-      };
-      
-      console.log('模型加载选项:', modelOptions);
+      // 设置最简化的模型加载配置
+      console.log('准备加载模型，使用最简化配置');
       
       // 尝试加载模型
       let model;
       try {
-        model = await Live2DModel.from(fullModelPath, modelOptions);
+        // 使用最简单的配置
+        model = await Live2DModel.from(fullModelPath, {
+          autoInteract: false,
+          motionPreload: false, // 关闭动作预加载
+          cubism2: true, // 启用Cubism 2支持
+          cubism4: true, // 启用Cubism 4支持
+          autoUpdate: true, // 启用自动更新
+        });
+        
+        console.log('模型加载成功（第一次尝试）');
       } catch (modelError) {
         console.error('模型加载失败，尝试使用备用配置:', modelError);
+        setErrorDetails(`模型加载错误: ${modelError.message || modelError}`);
         
-        // 尝试使用简化配置重新加载
+        // 尝试使用更简化的配置
         try {
-          const fallbackOptions = {
-            autoInteract: false,
-            motionPreload: true,
-            cubism2: true,
-            cubism4: true,
-            autoUpdate: false
-          };
-          
-          console.log('使用备用配置尝试加载:', fallbackOptions);
-          model = await Live2DModel.from(fullModelPath, fallbackOptions);
+          console.log('使用备用配置尝试加载');
+          // 最基本的配置
+          model = await Live2DModel.from(fullModelPath);
+          console.log('模型加载成功（备用配置）');
         } catch (fallbackError) {
           console.error('备用配置加载也失败:', fallbackError);
-          throw fallbackError;
+          setErrorDetails(prev => `${prev}\n备用配置加载失败: ${fallbackError.message || fallbackError}`);
+          
+          // 最后尝试
+          try {
+            console.log('尝试最后的加载方式');
+            // 直接从URL创建，不使用任何选项
+            const modelUrl = new URL(fullModelPath, window.location.href).href;
+            model = await Live2DModel.fromUrl(modelUrl);
+            console.log('模型加载成功（最终尝试）');
+          } catch (finalError) {
+            console.error('所有加载尝试都失败:', finalError);
+            setErrorDetails(prev => `${prev}\n所有加载尝试都失败: ${finalError.message || finalError}`);
+            throw finalError;
+          }
         }
       }
       
