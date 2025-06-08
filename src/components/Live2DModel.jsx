@@ -50,6 +50,43 @@ const ensureCubismCoreLoaded = async () => {
   }
 };
 
+// 确保live2d.min.js (Cubism 2)已经加载
+const ensureLive2DLoaded = async () => {
+  console.log('检查Live2D (Cubism 2)是否已加载');
+  
+  if (!window.Live2D) {
+    console.log('Live2D (Cubism 2)未加载，尝试加载...');
+    
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = './libs/live2d.min.js';
+      script.async = true;
+      document.body.appendChild(script);
+      
+      script.onload = () => {
+        console.log('Live2D (Cubism 2)加载成功');
+        resolve();
+      };
+      
+      script.onerror = () => {
+        console.error('无法加载Live2D (Cubism 2)库');
+        reject(new Error('无法加载Live2D (Cubism 2)库'));
+      };
+      
+      // 设置超时
+      setTimeout(() => {
+        if (!window.Live2D) {
+          console.error('加载Live2D (Cubism 2)库超时');
+          reject(new Error('加载Live2D (Cubism 2)库超时'));
+        }
+      }, 5000);
+    });
+  } else {
+    console.log('Live2D (Cubism 2)已加载');
+    return Promise.resolve();
+  }
+};
+
 const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoaded }) => {
   const canvasRef = useRef(null);
   const appRef = useRef(null);
@@ -133,7 +170,10 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
         
         appRef.current = app;
         
-        // 确保核心库已加载
+        // 确保Cubism 2运行时已加载
+        await ensureLive2DLoaded();
+        
+        // 确保Cubism 4核心库已加载
         await ensureCubismCoreLoaded();
         
         // 解析模型路径并加载模型
@@ -232,7 +272,12 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       PIXI.Loader.shared.baseUrl = fullModelPath.substring(0, fullModelPath.lastIndexOf('/') + 1);
       console.log('设置PIXI Loader基础路径:', PIXI.Loader.shared.baseUrl);
       
-      // 确保核心库已加载
+      // 确保Cubism 2和Cubism 4核心库都已加载
+      if (!window.Live2D) {
+        console.error('Live2D (Cubism 2)未加载，尝试手动加载');
+        await ensureLive2DLoaded();
+      }
+      
       if (!window.Live2DCubismCore) {
         console.error('Live2DCubismCore未加载，尝试手动加载');
         await ensureCubismCoreLoaded();
@@ -241,12 +286,27 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       // 不使用registerTicker，避免autoUpdate相关问题
       console.log('使用配置加载模型');
       
-      // 完全避免使用autoUpdate属性
+      // 设置模型加载配置
       const model = await Live2DModel.from(fullModelPath, {
         autoInteract: false,
-        // 不设置autoUpdate属性
         motionPreload: true,
+        // 明确指定同时支持Cubism 2和Cubism 4
+        cubism2: true, // 启用Cubism 2支持
+        cubism4: true, // 启用Cubism 4支持
+        // 注册PIXI的Ticker
+        autoUpdate: false, // 禁用自动更新，使用我们自己的更新函数
       });
+      
+      // 手动注册更新函数到PIXI的Ticker
+      if (app && app.ticker) {
+        const tickerFunction = (delta) => {
+          if (model && !model.destroyed) {
+            model.update(delta);
+          }
+        };
+        app.ticker.add(tickerFunction);
+        tickerRef.current = tickerFunction;
+      }
       
       console.log('模型加载成功:', model);
       setLoadingState('模型加载成功');

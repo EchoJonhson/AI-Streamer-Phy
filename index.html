@@ -7,6 +7,9 @@
     <meta name="description" content="虚拟AI主播 - 基于AI技术的虚拟主播互动平台" />
     <meta name="keywords" content="虚拟主播,AI,Live2D,互动,直播" />
     <title>虚拟AI主播</title>
+    <!-- Live2D Cubism 2 运行时 -->
+    <script src="./libs/live2d.min.js" type="text/javascript"></script>
+    
     <!-- Live2D Cubism 核心库 - 优化加载顺序 -->
     <!-- 本地核心库优先 -->
     <script src="./live2d/core/live2dcubismcore.min.js" defer type="text/javascript"></script>
@@ -34,12 +37,21 @@
       window.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
           console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
+          console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
           
           // 如果核心库未加载，尝试再次加载
           if (!window.Live2DCubismCore) {
             console.warn('DOMContentLoaded后核心库未加载，尝试再次加载...');
             var script = document.createElement('script');
             script.src = './live2d/core/live2dcubismcore.min.js';
+            document.head.appendChild(script);
+          }
+          
+          // 如果Cubism 2运行时未加载，尝试再次加载
+          if (!window.Live2D) {
+            console.warn('DOMContentLoaded后Cubism 2运行时未加载，尝试再次加载...');
+            var script = document.createElement('script');
+            script.src = './libs/live2d.min.js';
             document.head.appendChild(script);
           }
         }, 500); // 延迟检查，确保有足够时间加载
