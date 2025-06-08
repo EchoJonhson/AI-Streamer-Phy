@@ -9,8 +9,9 @@ const HF_API_KEY = "YOUR_HUGGING_FACE_API_KEY"; // 上线前替换为真实密�
 // 允许的域名列表（为了安全，限制只有特定域名可以使用此Worker）
 const ALLOWED_ORIGINS = [
   "https://virtual-ai-streamer-git-main-tsurumiyakawas-projects.vercel.app",
-  "https://your-domain.com",
-  "http://localhost:3000"
+  "https://broad-surf-db28.3485573766.workers.dev",
+  "http://localhost:3000",
+  "http://localhost:5173"
 ];
 
 /**
