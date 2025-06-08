@@ -184,26 +184,68 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
         
         // 创建PIXI应用
         try {
-          // 确保使用最简单的初始化方式
-          app = new PIXI.Application(appOptions);
+          // 尝试使用PIXI 5.x的方式初始化
+          app = new PIXI.Application({
+            view: canvasRef.current,
+            width,
+            height,
+            transparent: true,
+            autoStart: true,
+            forceCanvas: true,
+            legacy: true // 使用遗留模式
+          });
+          
+          console.log('PIXI应用创建成功（使用PIXI 5.x兼容模式）');
         } catch (pixiError) {
           console.error('PIXI应用创建失败，尝试使用备用方法:', pixiError);
           
           try {
-            // 最基本的初始化方式
-            app = new PIXI.Application({
+            // 尝试使用最基本的初始化方式
+            // 创建一个最基本的renderer和stage
+            const renderer = new PIXI.CanvasRenderer({
               view: canvasRef.current,
               width,
               height,
-              forceCanvas: true
+              transparent: true
             });
+            
+            const stage = new PIXI.Container();
+            
+            // 手动创建一个类似Application的对象
+            app = {
+              renderer: renderer,
+              stage: stage,
+              ticker: new PIXI.Ticker(),
+              view: canvasRef.current,
+              destroy: function(removeView) {
+                this.ticker.destroy();
+                this.renderer.destroy(removeView);
+                this.stage.destroy();
+              }
+            };
+            
+            // 启动ticker
+            app.ticker.start();
+            
+            console.log('PIXI应用创建成功（使用手动构建方式）');
           } catch (fallbackError) {
             console.error('备用初始化也失败:', fallbackError);
+            setLoadingState('初始化失败');
+            setErrorDetails(`PIXI初始化失败: ${fallbackError.message}`);
             throw new Error('无法创建PIXI应用程序');
           }
         }
         
+        // 保存应用程序引用
         appRef.current = app;
+        
+        // 检查app是否有效
+        if (!app || !app.stage) {
+          console.error('PIXI应用程序无效，无法继续加载模型');
+          setLoadingState('初始化失败');
+          setErrorDetails('PIXI应用程序初始化失败，无法加载模型');
+          return;
+        }
         
         // 确保Cubism 2运行时已加载
         await ensureLive2DLoaded();
@@ -324,6 +366,18 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       // 设置最简化的模型加载配置
       console.log('准备加载模型，使用最简化配置');
       
+      // 注册PIXI的Ticker到Live2DModel
+      try {
+        if (app && app.ticker) {
+          console.log('注册PIXI Ticker到Live2DModel');
+          Live2DModel.registerTicker(app.ticker);
+        } else {
+          console.warn('无法注册Ticker: app.ticker不可用');
+        }
+      } catch (tickerError) {
+        console.error('注册Ticker失败:', tickerError);
+      }
+      
       // 尝试加载模型
       let model;
       try {
@@ -403,8 +457,20 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       const scale = Math.min(width / model.width, height / model.height) * 2.5;
       model.scale.set(scale, scale);
         
-      // 添加模型到舞台
-      app.stage.addChild(model);
+      // 添加模型到舞台（添加安全检查）
+      if (app && app.stage) {
+        try {
+          app.stage.addChild(model);
+          console.log('模型成功添加到舞台');
+        } catch (addError) {
+          console.error('添加模型到舞台失败:', addError);
+          setErrorDetails(prev => `${prev}\n添加模型到舞台失败: ${addError.message}`);
+          // 即使添加失败，也继续执行后续逻辑
+        }
+      } else {
+        console.error('无法添加模型到舞台: app或stage为null');
+        setErrorDetails(prev => `${prev}\n无法添加模型到舞台: app或stage为null`);
+      }
       
       // 保存模型引用
       modelRef.current = model;
