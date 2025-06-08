@@ -3,13 +3,14 @@
  * 用于解决CORS问题并保护API密钥
  */
 
-// 设置您的Hugging Face API密钥（请在实际部署前替换）
-const HF_API_KEY = "YOUR_HUGGING_FACE_API_KEY"; // 上线前替换为真实密钥
+// 从环境变量中获取Hugging Face API密钥
+const HF_API_KEY = HUGGINGFACE_API_KEY || "YOUR_HUGGING_FACE_API_KEY"; // 使用环境变量
 
 // 允许的域名列表（为了安全，限制只有特定域名可以使用此Worker）
 const ALLOWED_ORIGINS = [
   "https://virtual-ai-streamer-git-main-tsurumiyakawas-projects.vercel.app",
   "https://broad-surf-db28.3485573766.workers.dev",
+  "https://virtual-ai-streamer.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173"
 ];
@@ -28,8 +29,14 @@ async function handleRequest(request) {
   }
   
   // 验证源是否允许访问
-  if (!ALLOWED_ORIGINS.includes(origin) && origin !== "*" && !origin.includes("localhost")) {
-    return new Response(JSON.stringify({ error: "未授权的域名" }), {
+  const isAllowedOrigin = ALLOWED_ORIGINS.includes(origin) || 
+                          origin === "*" || 
+                          origin.includes("localhost") ||
+                          origin.includes("3485573766.workers.dev") ||
+                          origin.includes("virtual-ai-streamer");
+                          
+  if (!isAllowedOrigin) {
+    return new Response(JSON.stringify({ error: "未授权的域名", origin: origin }), {
       status: 403,
       headers: getCORSHeaders(origin)
     });
