@@ -225,12 +225,29 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
       PIXI.Loader.shared.baseUrl = fullModelPath.substring(0, fullModelPath.lastIndexOf('/') + 1);
       console.log('设置PIXI Loader基础路径:', PIXI.Loader.shared.baseUrl);
       
-      // 注册PIXI Ticker
-      Live2DModel.registerTicker(PIXI.Ticker.shared);
+      // 确保核心库已加载
+      if (!window.Live2DCubismCore) {
+        console.error('Live2DCubismCore未加载，尝试手动加载');
+        await ensureCubismCoreLoaded();
+      }
       
+      // 注册PIXI Ticker
+      try {
+        console.log('注册PIXI Ticker');
+        if (typeof Live2DModel.registerTicker === 'function') {
+          Live2DModel.registerTicker(PIXI.Ticker.shared);
+        } else {
+          console.warn('Live2DModel.registerTicker不是一个函数');
+        }
+      } catch (tickerError) {
+        console.error('注册Ticker失败:', tickerError);
+      }
+      
+      // 加载模型，禁用autoUpdate以避免错误
+      console.log('使用配置加载模型');
       const model = await Live2DModel.from(fullModelPath, {
         autoInteract: false, // 关闭自动交互，我们将自定义交互
-        autoUpdate: true,
+        autoUpdate: false, // 禁用自动更新，避免错误
         motionPreload: true,
       });
       
@@ -397,11 +414,12 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
               if (index !== -1 && typeof internalModel.setParam === 'function') {
                 internalModel.setParam(paramId, value);
               }
-            } else if (typeof coreModel.setParameterValueById === 'function') {
+            } else if (coreModel && typeof coreModel.setParameterValueById === 'function') {
               coreModel.setParameterValueById(paramId, value);
             }
           } catch (e) {
             // 忽略参数设置错误
+            console.debug(`设置参数 ${paramId} 失败:`, e);
           }
         };
         
@@ -446,13 +464,24 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         }
         
         // 确保物理效果正常工作
-        if (internalModel.motionManager && typeof internalModel.motionManager.update === 'function') {
-          internalModel.motionManager.update();
+        try {
+          if (internalModel.motionManager && typeof internalModel.motionManager.update === 'function') {
+            internalModel.motionManager.update();
+          }
+        } catch (motionError) {
+          console.debug('更新动作管理器时出错:', motionError);
         }
         
-        // 更新模型
-        if (typeof model.update === 'function') {
-          model.update(app.ticker.deltaMS / 1000);
+        // 更新模型 - 添加更多安全检查
+        try {
+          if (typeof model.update === 'function') {
+            model.update(app.ticker.deltaMS / 1000);
+          } else if (internalModel && typeof internalModel.update === 'function') {
+            // 尝试直接更新内部模型
+            internalModel.update(app.ticker.deltaMS / 1000);
+          }
+        } catch (updateError) {
+          console.warn('更新模型时出错:', updateError);
         }
       } catch (error) {
         console.warn('更新模型参数时出错:', error);

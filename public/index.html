@@ -9,9 +9,9 @@
   <!-- Polyfill for older browsers -->
   <script src="https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver%2CResizeObserver"></script>
   
-  <!-- 预加载Live2D核心库 -->
-  <script src="/live2d/core/live2dcubismcore.min.js"></script>
-  <script src="/live2d/core/live2d.min.js"></script>
+  <!-- 预加载Live2D核心库 - 使用defer确保按顺序加载 -->
+  <script src="/live2d/core/live2dcubismcore.min.js" defer></script>
+  <script src="/live2d/core/live2d.min.js" defer></script>
   
   <!-- 调试状态检查 -->
   <script>
@@ -19,6 +19,14 @@
       console.log('Live2D核心库状态检查:');
       console.log('Live2DCubismCore:', window.Live2DCubismCore ? '已加载' : '未加载');
       console.log('Live2D:', window.Live2D ? '已加载' : '未加载');
+      
+      // 如果核心库未加载，尝试手动加载
+      if (!window.Live2DCubismCore) {
+        console.log('尝试手动加载Live2DCubismCore...');
+        const script = document.createElement('script');
+        script.src = '/live2d/core/live2dcubismcore.min.js';
+        document.head.appendChild(script);
+      }
     });
   </script>
 </head>
