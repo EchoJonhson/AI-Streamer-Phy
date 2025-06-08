@@ -31,13 +31,13 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       console.log('解析后的模型路径:', fullPath);
       return fullPath;
     };
-        
+    
         const fullModelPath = resolveModelPath();
         
         // 检查模型文件是否存在
         try {
           console.log('尝试检查模型:', fullModelPath);
-          const response = await fetch(fullModelPath);
+        const response = await fetch(fullModelPath);
           
         if (!response.ok) {
           throw new Error(`模型文件请求失败: ${response.status} ${response.statusText}`);
@@ -46,7 +46,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
           console.log('模型文件存在:', modelPath);
           const modelConfig = await response.json();
           console.log('模型配置:', modelConfig);
-          
+        
           // 成功加载模型配置
           setLoadingState('模型文件已加载');
           
@@ -58,7 +58,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
           iframe.style.border = 'none';
           iframe.style.overflow = 'hidden';
           iframe.style.backgroundColor = 'transparent';
-          
+      
           // 创建一个简单的HTML页面来加载Live2D模型
           const iframeContent = `
             <!DOCTYPE html>
@@ -93,14 +93,14 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                     const canvas = document.getElementById('live2d-canvas');
                     canvas.width = ${width};
                     canvas.height = ${height};
-                    
+        
                     // 通知父窗口模型开始加载
                     window.parent.postMessage({ type: 'live2d-loading', message: '开始加载模型' }, '*');
                     
                     // 加载模型（使用第三方库或自定义代码）
                     // 这里只是一个占位符，实际实现取决于您使用的Live2D库
                     const modelPath = '${fullModelPath}';
-                    
+    
                     // 添加接收命令的监听器
                     window.addEventListener('message', (event) => {
                       const data = event.data;
@@ -108,7 +108,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                       
                       try {
                         console.log('iframe接收到命令:', data.command, data);
-                        
+            
                         // 处理表情命令
                         if (data.command === 'expression' && data.name) {
                           console.log('应用表情:', data.name);
@@ -119,19 +119,19 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                         if (data.command === 'motion' && data.group) {
                           console.log('应用动作:', data.group, data.index || 0);
                           // 这里添加实际应用动作的代码
-                        }
-                      } catch (error) {
+        }
+      } catch (error) {
                         console.error('处理命令时出错:', error);
-                      }
-                    });
-                    
+      }
+    });
+
                     // 通知父窗口模型加载成功
                     window.parent.postMessage({ 
                       type: 'live2d-loaded', 
                       message: '模型加载成功',
                       modelPath: modelPath
                     }, '*');
-                    
+      
                     // 简单的动画循环
                     function animate() {
                       // 在这里添加模型更新代码
@@ -152,7 +152,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
             </body>
             </html>
           `;
-          
+
           // 设置iframe内容加载事件
           iframe.onload = () => {
             if (isMounted) {
@@ -163,8 +163,8 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
           // 监听来自iframe的消息
           const messageHandler = (event) => {
             if (!isMounted) return;
-            
-            try {
+      
+      try {
               const data = event.data;
               
               if (data && data.type) {
@@ -199,20 +199,20 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                     setErrorDetails(data.error || '未知错误');
                     break;
                 }
-              }
+            }
             } catch (err) {
               console.error('处理iframe消息失败:', err);
             }
           };
           
           window.addEventListener('message', messageHandler);
-          
+        
           // 添加iframe到容器
           if (containerRef.current && isMounted) {
             // 清除容器内容
             containerRef.current.innerHTML = '';
             containerRef.current.appendChild(iframe);
-            
+        
             // 写入iframe内容
             iframe.contentWindow.document.open();
             iframe.contentWindow.document.write(iframeContent);
@@ -232,7 +232,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
           if (isMounted) {
             setLoadingState('加载失败');
             setErrorDetails(`模型文件检查失败: ${error.message}`);
-          }
+        }
         }
         
       } catch (error) {

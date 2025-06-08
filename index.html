@@ -101,15 +101,15 @@
       window.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
           console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
-          console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
-          
-          // 如果核心库未加载，尝试再次加载
-          if (!window.Live2DCubismCore) {
+        console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
+        
+        // 如果核心库未加载，尝试再次加载
+        if (!window.Live2DCubismCore) {
             console.warn('DOMContentLoaded后核心库未加载，尝试再次加载...');
-            var script = document.createElement('script');
-            script.src = './live2d/core/live2dcubismcore.min.js';
-            document.head.appendChild(script);
-          }
+          var script = document.createElement('script');
+          script.src = './live2d/core/live2dcubismcore.min.js';
+          document.head.appendChild(script);
+        }
           
           // 如果Cubism 2运行时未加载，尝试再次加载
           if (!window.Live2D) {
