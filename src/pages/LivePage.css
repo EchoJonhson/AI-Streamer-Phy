@@ -24,19 +24,20 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: rgba(255, 255, 255, 0.9);
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  background-color: rgba(30, 30, 40, 0.9);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
   z-index: 10;
   min-width: 300px;
 }
 
 .chat-header {
   padding: 10px 15px;
-  background-color: #f0f0f0;
-  border-bottom: 1px solid #ddd;
+  background-color: rgba(20, 20, 30, 0.9);
+  border-bottom: 1px solid #333;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: #ffffff;
 }
 
 .online-status {
@@ -81,15 +82,16 @@
   border-radius: 10px;
   max-width: 80%;
   word-break: break-word;
+  color: #ffffff;
 }
 
 .user-message {
-  background-color: #DCF8C6;
+  background-color: #3a7a4f;
   align-self: flex-end;
 }
 
 .ai-message {
-  background-color: #E6E6E6;
+  background-color: #444454;
   align-self: flex-start;
 }
 
@@ -98,7 +100,7 @@
   justify-content: space-between;
   margin-bottom: 5px;
   font-size: 0.8rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .message-content {
@@ -108,17 +110,19 @@
 .message-form {
   display: flex;
   padding: 10px;
-  border-top: 1px solid #ddd;
-  background-color: #f9f9f9;
+  border-top: 1px solid #333;
+  background-color: rgba(25, 25, 35, 0.9);
 }
 
 .message-input {
   flex: 1;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid #444;
   border-radius: 20px;
   margin-right: 10px;
   outline: none;
+  background-color: rgba(40, 40, 50, 0.9);
+  color: #ffffff;
 }
 
 .send-button {

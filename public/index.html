@@ -2,22 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live2D测试页面</title>
-  <!-- 直接从CDN加载Cubism 2运行时库 -->
-  <script src="https://cdn.jsdelivr.net/gh/dylanNew/live2d/webgl/Live2D/lib/live2d.min.js"></script>
-  <!-- 加载Cubism 4运行时库 -->
-  <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+  <title>虚拟AI主播</title>
+  <!-- 预加载Live2D核心库 -->
+  <script src="/live2d/core/live2dcubismcore.min.js"></script>
+  <script src="/live2d/core/live2d.min.js"></script>
 </head>
 <body>
-  <h1>Live2D测试页面</h1>
-  <p>这个页面用于测试Live2D模型加载</p>
-  
-  <script>
-    window.addEventListener('DOMContentLoaded', function() {
-      console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
-      console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
-    });
-  </script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
 </body>
 </html> 

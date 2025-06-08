@@ -3,7 +3,7 @@
 	"FileReferences": {
 		"Moc": "wuwuwu.moc3",
 		"Textures": [
-			"wuwuwu.8192/texture_00.png"
+			"texture_00.png"
 		],
 		"Physics": "wuwuwu.physics3.json",
 		"DisplayInfo": "wuwuwu.cdi3.json"

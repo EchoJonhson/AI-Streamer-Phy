@@ -56,6 +56,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
   const modelRef = useRef(null);
   const [loadingState, setLoadingState] = useState('初始化中...');
   const [errorDetails, setErrorDetails] = useState('');
+  const [resolvedModelPath, setResolvedModelPath] = useState('');
   const containerRef = useRef(null);
   const onMouseMoveRef = useRef(null); // 用于存储事件处理函数引用，以便清理
   const blinkTimerRef = useRef(null); // 用于存储眨眼计时器
@@ -96,6 +97,23 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
   useEffect(() => {
     let app = null;
     
+    // 解析模型路径
+    const resolveModelPath = () => {
+      // 如果是绝对URL，直接使用
+      if (modelPath.startsWith('http')) {
+        return modelPath;
+      }
+      
+      // 如果是相对路径，构建完整URL
+      const basePath = window.location.origin;
+      // 确保路径以斜杠开头，避免重复斜杠
+      const normalizedPath = modelPath.startsWith('/') ? modelPath : `/${modelPath}`;
+      const fullPath = `${basePath}${normalizedPath}`;
+      console.log('解析后的模型路径:', fullPath);
+      setResolvedModelPath(fullPath);
+      return fullPath;
+    };
+    
     // 初始化PIXI应用和加载模型
     const initializeApp = async () => {
       try {
@@ -117,8 +135,11 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         // 确保核心库已加载
         await ensureCubismCoreLoaded();
         
+        // 解析模型路径并加载模型
+        const fullModelPath = resolveModelPath();
+        
         // 加载模型
-        await loadModel(app);
+        await loadModel(app, fullModelPath);
       } catch (error) {
         console.error('初始化应用失败:', error);
         setLoadingState('初始化失败');
@@ -152,14 +173,15 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
   }, [modelPath, width, height]);
   
   // 加载Live2D模型
-  const loadModel = async (app) => {
+  const loadModel = async (app, fullModelPath) => {
     try {
       setLoadingState('加载模型中...');
-      console.log('开始加载模型:', modelPath);
+      console.log('开始加载模型:', fullModelPath);
       
       // 检查模型文件是否可访问
       try {
-        const response = await fetch(modelPath);
+        console.log('尝试获取模型文件...');
+        const response = await fetch(fullModelPath);
         console.log('模型文件请求状态:', response.status, response.statusText);
         if (!response.ok) {
           throw new Error(`模型文件请求失败: ${response.status} ${response.statusText}`);
@@ -167,6 +189,27 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         
         const modelJson = await response.json();
         console.log('模型配置内容:', modelJson);
+        
+        // 验证纹理文件路径
+        if (modelJson.FileReferences && modelJson.FileReferences.Textures) {
+          const texturePaths = modelJson.FileReferences.Textures;
+          console.log('纹理文件路径:', texturePaths);
+          
+          // 尝试预加载第一个纹理文件
+          if (texturePaths.length > 0) {
+            const texturePath = texturePaths[0];
+            const textureUrl = new URL(texturePath, new URL(fullModelPath, window.location.href)).href;
+            console.log('尝试加载纹理:', textureUrl);
+            
+            const textureResponse = await fetch(textureUrl);
+            if (!textureResponse.ok) {
+              console.warn(`纹理文件可能不可访问: ${textureUrl}, 状态: ${textureResponse.status}`);
+              setErrorDetails(prev => prev + `\n纹理文件可能不可访问: ${textureUrl}`);
+            } else {
+              console.log('纹理文件可访问');
+            }
+          }
+        }
       } catch (fetchError) {
         console.error('模型文件预检失败:', fetchError);
         setErrorDetails(`模型文件预检失败: ${fetchError.message}`);
@@ -175,7 +218,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
       
       // 从指定路径加载模型
       console.log('开始使用Live2DModel.from加载模型');
-      const model = await Live2DModel.from(modelPath, {
+      const model = await Live2DModel.from(fullModelPath, {
         autoInteract: false, // 关闭自动交互，我们将自定义交互
         autoUpdate: true,
         motionPreload: true,

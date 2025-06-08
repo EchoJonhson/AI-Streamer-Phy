@@ -17,11 +17,10 @@ const LivePage = () => {
 
   // 初始化模型路径
   useEffect(() => {
-    // 使用完整的相对路径
-    const basePath = window.location.origin;
-    const fullModelPath = new URL('./live2d/models/wuwuwu/wuwuwu.model3.json', basePath).href;
-    console.log('设置模型路径:', fullModelPath);
-    setModelPath(fullModelPath);
+    // 修正模型路径，使用相对路径
+    const modelPath = '/live2d/models/wuwuwu/wuwuwu.model3.json';
+    console.log('设置模型路径:', modelPath);
+    setModelPath(modelPath);
   }, []);
 
   // 检查用户是否已登录
