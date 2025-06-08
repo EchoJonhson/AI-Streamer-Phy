@@ -80,25 +80,8 @@
     <!-- Live2D Cubism 4 核心库 -->
     <script src="./live2d/core/live2dcubismcore.min.js"></script>
     
-    <!-- PIXI-Live2D-Display库 - 必须放在PIXI和Live2D核心库之后 -->
-    <script>
-      // 等待核心库加载完成后再加载PIXI-Live2D-Display
-      function loadPixiLive2DDisplay() {
-        if (window.PIXI && window.Live2DCubismCore) {
-          // 核心库已加载，加载PIXI-Live2D-Display
-          var script = document.createElement('script');
-          script.src = "https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js";
-          document.head.appendChild(script);
-          console.log('正在加载PIXI-Live2D-Display');
-        } else {
-          // 核心库尚未加载，延迟重试
-          setTimeout(loadPixiLive2DDisplay, 100);
-        }
-      }
-      
-      // 开始加载
-      setTimeout(loadPixiLive2DDisplay, 500);
-    </script>
+    <!-- 本地版本的PIXI-Live2D-Display库 -->
+    <script src="./index-live2d.js"></script>
     
     <!-- 备用CDN加载 -->
     <script>
@@ -143,10 +126,12 @@
             document.head.appendChild(script);
           }
           
-          // 如果PIXI-Live2D-Display未加载，尝试再次加载
+          // 如果PIXI-Live2D-Display未加载，尝试本地版本
           if (!window.PIXI || !window.PIXI.live2d) {
-            console.warn('DOMContentLoaded后PIXI-Live2D-Display未加载，尝试再次加载...');
-            loadPixiLive2DDisplay();
+            console.warn('尝试使用本地PIXI-Live2D-Display库...');
+            var script = document.createElement('script');
+            script.src = './index-live2d.js';
+            document.head.appendChild(script);
           }
         }, 1000); // 延迟检查，确保有足够时间加载
       });

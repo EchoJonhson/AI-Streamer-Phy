@@ -9,7 +9,7 @@ const DEFAULT_MODEL = 'OpenAssistant/oasst-sft-1-pythia-12b';
 
 // Cloudflare Worker URL
 const USE_MOCK_API = false;
-const WORKER_URL = 'https://broad-surf-db28.3485573766.workers.dev';
+const WORKER_URL = 'https://broad-surf-db28.3485573766.workers.dev/api';
 
 /**
  * 检查是否已配置API服务
@@ -74,6 +74,25 @@ export const sendMessageToHuggingFace = async (message, username, chatHistory = 
       }
     };
 
+    // 在请求前先验证Worker是否可访问
+    try {
+      const statusCheck = await fetch(WORKER_URL.replace('/api', ''), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!statusCheck.ok) {
+        console.warn(`Worker状态检查失败: ${statusCheck.status}`);
+      } else {
+        const statusData = await statusCheck.json();
+        console.log('Worker状态:', statusData);
+      }
+    } catch (statusError) {
+      console.warn('Worker状态检查失败:', statusError);
+    }
+
     try {
       // 首先尝试使用默认模式
       const response = await fetch(WORKER_URL, {
@@ -103,35 +122,25 @@ export const sendMessageToHuggingFace = async (message, username, chatHistory = 
     } catch (fetchError) {
       console.warn('API请求失败，尝试兼容模式:', fetchError);
       
-      // 尝试备用模式: 使用no-cors模式
-      try {
-        console.log('尝试使用no-cors模式请求API');
-        // 注意: no-cors模式只能用于简单请求，且无法读取响应内容
-        await fetch(WORKER_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-        
-        return { 
-          content: '请求已发送，但由于CORS限制，无法读取响应。这是一个模拟响应: "我是一个AI助手，很高兴为您服务。您可以问我任何问题，我会尽力回答。"' 
-        };
-      } catch (noCorsError) {
-        console.warn('无法连接到API服务器:', noCorsError);
-        // 使用模拟数据
-        return { 
-          content: '无法连接到API服务器。这是一个模拟响应: "我是一个AI助手，很高兴为您服务。您可以问我任何问题，我会尽力回答。"' 
-        };
-      }
+      // 启用模拟API模式返回响应
+      console.log('由于API请求失败，使用模拟响应');
+      const mockResponses = [
+        `你好，${username || '用户'}！我是虚拟AI主播，很高兴为你服务。`,
+        `你的消息"${message}"已收到。由于API暂时不可用，我只能提供简单回复。`,
+        `API服务器暂时无法连接，请稍后再试。这是一个模拟响应。`,
+        `我正在思考你说的"${message}"。目前API连接有问题，无法提供完整回答。`,
+        `谢谢你的提问！但是我现在无法连接到AI服务器，只能提供预设回复。`
+      ];
+      
+      // 随机选择一个响应
+      const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+      return { content: mockResponse };
     }
   } catch (error) {
     console.error('Hugging Face API调用失败:', error);
     // 返回错误消息而不是抛出异常，以防止UI崩溃
     return { 
-      content: `处理请求时出错: ${error.message}. 请尝试使用模拟API模式或检查网络连接。` 
+      content: `处理请求时出错: ${error.message}. 请检查网络连接或Cloudflare Worker配置。` 
     };
   }
 };
