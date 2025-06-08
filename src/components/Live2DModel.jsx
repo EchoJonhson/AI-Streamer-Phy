@@ -15,22 +15,22 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       
       try {
         setLoadingState('正在加载模型...');
-        
-        // 解析模型路径
-        const resolveModelPath = () => {
-          // 如果是绝对URL，直接使用
-          if (modelPath.startsWith('http')) {
-            return modelPath;
-          }
-          
-          // 如果是相对路径，构建完整URL
-          const basePath = window.location.origin;
-          // 确保路径以斜杠开头，避免重复斜杠
-          const normalizedPath = modelPath.startsWith('/') ? modelPath : `/${modelPath}`;
-          const fullPath = `${basePath}${normalizedPath}`;
-          console.log('解析后的模型路径:', fullPath);
-          return fullPath;
-        };
+    
+    // 解析模型路径
+    const resolveModelPath = () => {
+      // 如果是绝对URL，直接使用
+      if (modelPath.startsWith('http')) {
+        return modelPath;
+      }
+      
+      // 如果是相对路径，构建完整URL
+      const basePath = window.location.origin;
+      // 确保路径以斜杠开头，避免重复斜杠
+      const normalizedPath = modelPath.startsWith('/') ? modelPath : `/${modelPath}`;
+      const fullPath = `${basePath}${normalizedPath}`;
+      console.log('解析后的模型路径:', fullPath);
+      return fullPath;
+    };
         
         const fullModelPath = resolveModelPath();
         
@@ -39,10 +39,10 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
           console.log('尝试检查模型:', fullModelPath);
           const response = await fetch(fullModelPath);
           
-          if (!response.ok) {
-            throw new Error(`模型文件请求失败: ${response.status} ${response.statusText}`);
-          }
-          
+        if (!response.ok) {
+          throw new Error(`模型文件请求失败: ${response.status} ${response.statusText}`);
+        }
+        
           console.log('模型文件存在:', modelPath);
           const modelConfig = await response.json();
           console.log('模型配置:', modelConfig);
@@ -100,6 +100,30 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                     // 加载模型（使用第三方库或自定义代码）
                     // 这里只是一个占位符，实际实现取决于您使用的Live2D库
                     const modelPath = '${fullModelPath}';
+                    
+                    // 添加接收命令的监听器
+                    window.addEventListener('message', (event) => {
+                      const data = event.data;
+                      if (!data || !data.command) return;
+                      
+                      try {
+                        console.log('iframe接收到命令:', data.command, data);
+                        
+                        // 处理表情命令
+                        if (data.command === 'expression' && data.name) {
+                          console.log('应用表情:', data.name);
+                          // 这里添加实际应用表情的代码
+                        }
+                        
+                        // 处理动作命令
+                        if (data.command === 'motion' && data.group) {
+                          console.log('应用动作:', data.group, data.index || 0);
+                          // 这里添加实际应用动作的代码
+                        }
+                      } catch (error) {
+                        console.error('处理命令时出错:', error);
+                      }
+                    });
                     
                     // 通知父窗口模型加载成功
                     window.parent.postMessage({ 
@@ -227,7 +251,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
       isMounted = false;
     };
   }, [modelPath, width, height, onModelLoaded]);
-  
+
   return (
     <div className="live2d-container" style={{ width, height }}>
       <div ref={containerRef} className="live2d-iframe-container" style={{ width, height }}></div>

@@ -21,7 +21,8 @@ import {
 } from '../services/huggingFaceService';
 import { 
   handleAIMessageExpression, 
-  startRandomBlinking 
+  startRandomBlinking,
+  parseExpressionFromMessage
 } from '../services/modelControlService';
 import { 
   speakText, 
@@ -203,12 +204,31 @@ const LivePage = () => {
 
   // 设置模型引用
   const handleModelLoaded = (model) => {
+    console.log('模型加载完成，接收到模型对象:', model);
+    
+    // 保存模型引用
     modelRef.current = model;
+    
+    // 添加调试信息，检查模型结构
+    if (debugMode) {
+      console.log('模型结构检查:');
+      console.log('- model.expression 方法存在:', typeof model.expression === 'function');
+      console.log('- model.motion 方法存在:', typeof model.motion === 'function');
+      console.log('- model.internalModel 存在:', !!model.internalModel);
+      
+      if (model.internalModel) {
+        console.log('- model.internalModel.settings 存在:', !!model.internalModel.settings);
+        console.log('- model.internalModel.expressions 存在:', !!model.internalModel.expressions);
+      }
+    }
     
     // 启动随机眨眼
     const config = getModelConfig();
-    if (config.enableBlinking && model) {
+    if (config.enableBlinking && model && typeof model.expression === 'function') {
+      console.log('启动随机眨眼');
       blinkTimerRef.current = startRandomBlinking(model, config.blinkInterval);
+    } else {
+      console.log('未启动随机眨眼，模型不支持或配置禁用');
     }
   };
 
@@ -361,7 +381,34 @@ const LivePage = () => {
       
       // 处理模型表情和动作
       if (modelRef.current && config.model.enableExpression) {
-        handleAIMessageExpression(modelRef.current, aiResponse.content);
+        try {
+          console.log('尝试应用表情和动作:', modelRef.current);
+          
+          // 解析表情和动作
+          const { expression, motions } = parseExpressionFromMessage(aiResponse.content);
+          
+          // 检查模型类型并应用适当的方法
+          if (typeof modelRef.current.expression === 'function') {
+            // 直接使用模型方法
+            if (expression) {
+              console.log('应用表情:', expression);
+              modelRef.current.expression(expression);
+            }
+            
+            if (motions && motions.length > 0) {
+              console.log('应用动作:', motions[0]);
+              modelRef.current.motion(motions[0], 0);
+            }
+          } else if (modelRef.current.internalModel) {
+            // 使用modelControlService
+            const result = handleAIMessageExpression(modelRef.current, aiResponse.content);
+            console.log('应用表情和动作结果:', result);
+          } else {
+            console.warn('模型不支持表情和动作功能');
+          }
+        } catch (expressionError) {
+          console.error('应用表情和动作时出错:', expressionError);
+        }
       }
     } catch (error) {
       console.error('处理AI响应失败:', error);

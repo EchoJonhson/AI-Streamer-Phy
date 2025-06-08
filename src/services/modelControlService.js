@@ -67,14 +67,36 @@ export const applyExpression = (model, expression) => {
   if (!model || !expression) return false;
   
   try {
+    // 增加更多安全检查
+    if (!model.internalModel) {
+      console.warn('模型的internalModel不存在');
+      return false;
+    }
+    
     // 检查模型是否支持该表情
-    const expressions = model.internalModel.settings.expressions || [];
-    const expressionExists = expressions.some(exp => exp.name === expression);
+    // 增加安全检查，确保settings和expressions存在
+    const settings = model.internalModel.settings || {};
+    const expressions = settings.expressions || [];
+    
+    // 如果expressions不存在，尝试从其他可能的位置获取
+    let expressionExists = false;
+    
+    if (expressions.length > 0) {
+      expressionExists = expressions.some(exp => exp.name === expression);
+    } else if (model.internalModel.expressions) {
+      // 有些模型可能直接在internalModel下有expressions
+      expressionExists = model.internalModel.expressions.some(exp => exp.name === expression);
+    }
     
     if (expressionExists) {
       // 应用表情
-      model.expression(expression);
-      return true;
+      if (typeof model.expression === 'function') {
+        model.expression(expression);
+        return true;
+      } else {
+        console.warn('模型没有expression方法');
+        return false;
+      }
     } else {
       console.warn(`表情 "${expression}" 在模型中不存在`);
       return false;
@@ -96,15 +118,27 @@ export const applyMotion = (model, motion, priority = 3) => {
   if (!model || !motion) return false;
   
   try {
+    // 增加安全检查
+    if (!model.internalModel) {
+      console.warn('模型的internalModel不存在');
+      return false;
+    }
+    
     // 检查模型是否支持该动作
-    const motionGroups = model.internalModel.settings.motions || {};
+    const settings = model.internalModel.settings || {};
+    const motionGroups = settings.motions || {};
     
     // 尝试在不同的动作组中查找
     for (const group in motionGroups) {
       if (motionGroups[group].some(m => m.file.includes(motion))) {
         // 应用动作
-        model.motion(group, 0, priority);
-        return true;
+        if (typeof model.motion === 'function') {
+          model.motion(group, 0, priority);
+          return true;
+        } else {
+          console.warn('模型没有motion方法');
+          return false;
+        }
       }
     }
     
