@@ -1,41 +1,23 @@
 /**
  * Hugging Face API服务
  * 用于与OpenAssistant等模型交互
+ * 通过Cloudflare Worker代理调用API，确保API密钥安全
  */
 
 // 默认模型ID
 const DEFAULT_MODEL = 'OpenAssistant/oasst-sft-1-pythia-12b';
 
-// Cloudflare Worker URL - 替换为您的Worker URL
-// 注意: 如果您创建了新的Worker，请更新此URL
-// 临时使用模拟API模式，避免对实际API的依赖
+// Cloudflare Worker URL
 const USE_MOCK_API = false;
 const WORKER_URL = 'https://broad-surf-db28.3485573766.workers.dev';
 
 /**
- * 从本地存储获取API密钥
- * @returns {string} API密钥
+ * 检查是否已配置API服务
+ * @returns {boolean} 是否已配置API服务
  */
-const getApiKey = () => {
-  return localStorage.getItem('hf_api_key') || '';
-};
-
-/**
- * 设置API密钥到本地存储
- * @param {string} key - API密钥
- */
-export const setApiKey = (key) => {
-  localStorage.setItem('hf_api_key', key);
-};
-
-/**
- * 检查是否已设置API密钥
- * @returns {boolean} 是否已设置API密钥
- */
-export const hasApiKey = () => {
-  // 由于我们现在使用Worker，不再需要前端存储API密钥
-  // 但保留此函数以保持兼容性，返回true表示"已配置"
-  return true;
+export const hasApiService = () => {
+  // Worker URL已配置，返回true
+  return WORKER_URL !== 'https://your-worker-url.workers.dev';
 };
 
 /**

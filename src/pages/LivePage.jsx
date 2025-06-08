@@ -17,7 +17,7 @@ import {
 import { 
   sendMessageToHuggingFace,
   streamMessageFromHuggingFace,
-  hasApiKey
+  hasApiService
 } from '../services/huggingFaceService';
 import { 
   handleAIMessageExpression, 
@@ -104,13 +104,13 @@ const LivePage = () => {
     setDebugMode(config.ui.showDebugInfo);
     
     // 检查是否有Hugging Face API密钥
-    if (hasApiKey()) {
+    if (hasApiService()) {
       setApiProvider('huggingface');
       localStorage.setItem('api_provider', 'huggingface');
     }
     
     // 如果没有API密钥，显示设置界面
-    if (!hasApiKey() && apiProvider === 'huggingface') {
+    if (!hasApiService() && apiProvider === 'huggingface') {
       setShowSettings(true);
     }
   }, [apiProvider]);
@@ -273,7 +273,7 @@ const LivePage = () => {
     localStorage.setItem('api_provider', newProvider);
     
     // 如果切换到Hugging Face但没有API密钥，显示设置界面
-    if (newProvider === 'huggingface' && !hasApiKey()) {
+    if (newProvider === 'huggingface' && !hasApiService()) {
       setShowSettings(true);
     }
   };
