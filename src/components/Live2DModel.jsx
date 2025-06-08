@@ -50,7 +50,7 @@ const ensureCubismCoreLoaded = async () => {
   }
 };
 
-const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
+const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoaded }) => {
   const canvasRef = useRef(null);
   const appRef = useRef(null);
   const modelRef = useRef(null);
@@ -177,7 +177,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
         modelRef.current = null;
       }
     };
-  }, [modelPath, width, height]);
+  }, [modelPath, width, height, onModelLoaded]);
   
   // 加载Live2D模型
   const loadModel = async (app, fullModelPath) => {
@@ -272,11 +272,85 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
       
       // 设置随机眨眼
       setupRandomBlinking(model);
+      
+      // 调用回调函数，传递模型引用
+      if (onModelLoaded && typeof onModelLoaded === 'function') {
+        onModelLoaded(model);
+      }
+      
+      // 添加模型方法
+      enhanceModelWithMethods(model);
     } catch (error) {
       console.error('加载Live2D模型失败:', error);
       setLoadingState(`加载失败`);
       setErrorDetails(`错误详情: ${error.message}\n堆栈: ${error.stack}`);
     }
+  };
+  
+  // 增强模型，添加额外方法
+  const enhanceModelWithMethods = (model) => {
+    if (!model) return;
+    
+    // 添加表情方法（如果不存在）
+    if (!model.expression) {
+      model.expression = (expressionName) => {
+        try {
+          if (model.internalModel && model.internalModel.expressions) {
+            const expression = model.internalModel.expressions.find(exp => exp.name === expressionName);
+            if (expression) {
+              expression.setWeight(1);
+              return true;
+            }
+          }
+          return false;
+        } catch (error) {
+          console.error('应用表情失败:', error);
+          return false;
+        }
+      };
+    }
+    
+    // 添加动作方法（如果不存在）
+    if (!model.motion) {
+      model.motion = (group, index = 0, priority = 3) => {
+        try {
+          if (model.internalModel && model.internalModel.motionManager) {
+            model.internalModel.motionManager.startMotion(group, index, priority);
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error('应用动作失败:', error);
+          return false;
+        }
+      };
+    }
+    
+    // 添加获取可用表情列表的方法
+    model.getAvailableExpressions = () => {
+      try {
+        if (model.internalModel && model.internalModel.expressions) {
+          return model.internalModel.expressions.map(exp => exp.name);
+        }
+        return [];
+      } catch (error) {
+        console.error('获取表情列表失败:', error);
+        return [];
+      }
+    };
+    
+    // 添加获取可用动作组的方法
+    model.getAvailableMotionGroups = () => {
+      try {
+        if (model.internalModel && model.internalModel.motionManager && model.internalModel.motionManager.definitions) {
+          return Object.keys(model.internalModel.motionManager.definitions);
+        }
+        return [];
+      } catch (error) {
+        console.error('获取动作组列表失败:', error);
+        return [];
+      }
+    };
   };
   
   // 设置随机眨眼

@@ -96,6 +96,12 @@
   align-self: flex-start;
 }
 
+.error-message {
+  background-color: #7a3a3a;
+  align-self: flex-start;
+  border-left: 3px solid #ff5252;
+}
+
 .message-header {
   display: flex;
   justify-content: space-between;
@@ -106,6 +112,28 @@
 
 .message-content {
   font-size: 1rem;
+}
+
+/* 流式消息样式 */
+.message.ai-message.streaming .message-content {
+  position: relative;
+}
+
+.message.ai-message.streaming .message-content::after {
+  content: '|';
+  display: inline-block;
+  opacity: 1;
+  animation: cursor-blink 0.8s infinite;
+  margin-left: 2px;
+}
+
+@keyframes cursor-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 .message-form {
@@ -126,6 +154,11 @@
   color: #ffffff;
 }
 
+.message-input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .send-button {
   background-color: #4CAF50;
   color: white;
@@ -138,6 +171,12 @@
 
 .send-button:hover {
   background-color: #45a049;
+}
+
+.send-button:disabled {
+  background-color: #2c6b2f;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* 调试信息样式 */
@@ -180,6 +219,43 @@
 
 .debug-info button:hover {
   background-color: #45a049;
+}
+
+/* API设置按钮 */
+.settings-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 100;
+}
+
+.settings-button:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+/* API切换按钮 */
+.api-toggle-button {
+  position: absolute;
+  top: 50px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  z-index: 100;
+  font-size: 12px;
+}
+
+.api-toggle-button:hover {
+  background-color: rgba(0, 0, 0, 0.9);
 }
 
 /* 确保Live2D容器填满整个模型容器 */
