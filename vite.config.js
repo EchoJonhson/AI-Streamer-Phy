@@ -16,13 +16,7 @@ export default defineConfig({
     sourcemap: false,
     chunkSizeWarningLimit: 1600,
     // 优化构建配置
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: false, // 保留console以便调试
-        drop_debugger: true,
-      }
-    },
+    minify: 'esbuild', // 使用esbuild替代terser进行压缩
     rollupOptions: {
       output: {
         manualChunks: {
@@ -31,6 +25,11 @@ export default defineConfig({
           'vendor': ['react', 'react-dom', 'react-router-dom'],
         },
       },
+      // 处理外部脚本
+      external: [
+        '/live2d/core/live2dcubismcore.min.js',
+        '/live2d-preload.js'
+      ]
     },
     // 复制live2d核心库到输出目录
     copyPublicDir: true,
