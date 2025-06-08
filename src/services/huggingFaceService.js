@@ -73,25 +73,38 @@ export const sendMessageToHuggingFace = async (message, username, chatHistory = 
       }
     };
 
-    // 发送请求到Cloudflare Worker
-    const response = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API请求失败: ${response.status} - ${errorText}`);
+    try {
+      // 首先尝试使用默认模式
+      const response = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API请求失败: ${response.status} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      return { content: data.generated_text || '无响应' };
+    } catch (fetchError) {
+      console.warn('API请求失败，使用备用响应:', fetchError);
+      
+      // 在生产环境中，我们应该使用服务器端代理
+      // 但作为临时解决方案，我们使用模拟数据
+      return { 
+        content: '由于CORS限制或网络问题，无法连接到API服务器。这是一个模拟响应。您可以尝试使用模拟API模式，或配置正确的CORS头。' 
+      };
     }
-
-    const data = await response.json();
-    return { content: data.generated_text || '无响应' };
   } catch (error) {
     console.error('Hugging Face API调用失败:', error);
-    throw error;
+    // 返回错误消息而不是抛出异常，以防止UI崩溃
+    return { 
+      content: `处理请求时出错: ${error.message}. 请尝试使用模拟API模式或检查网络连接。` 
+    };
   }
 };
 
@@ -127,7 +140,12 @@ export const streamMessageFromHuggingFace = async (message, username, chatHistor
     return { content: fullText };
   } catch (error) {
     console.error('Hugging Face 流式API调用失败:', error);
-    throw error;
+    // 返回错误消息而不是抛出异常
+    const errorMessage = '由于网络问题或CORS限制，无法使用流式API。请尝试使用模拟API或检查网络连接。';
+    if (onChunk && typeof onChunk === 'function') {
+      onChunk(errorMessage, errorMessage);
+    }
+    return { content: errorMessage };
   }
 };
 

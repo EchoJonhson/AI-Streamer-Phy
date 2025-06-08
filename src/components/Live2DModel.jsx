@@ -85,6 +85,20 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
               <script src="${window.location.origin}/live2d/core/live2dcubismcore.min.js"></script>
               <script src="${window.location.origin}/libs/pixi.min.js"></script>
               <script src="${window.location.origin}/libs/pixi-live2d-display.min.js"></script>
+              <script>
+                // 检查库是否正确加载
+                console.log('库加载检查:');
+                console.log('- live2d.min.js 加载状态:', typeof Live2D !== 'undefined' ? '已加载' : '未加载');
+                console.log('- live2dcubismcore.min.js 加载状态:', typeof Live2DCubismCore !== 'undefined' ? '已加载' : '未加载');
+                console.log('- pixi.min.js 加载状态:', typeof PIXI !== 'undefined' ? '已加载' : '未加载');
+                console.log('- pixi-live2d-display.min.js 加载状态:', typeof PIXI !== 'undefined' && PIXI.live2d ? '已加载' : '未加载');
+                
+                // 尝试手动设置全局PIXI变量
+                if (typeof PIXI !== 'undefined' && !window.PIXI) {
+                  window.PIXI = PIXI;
+                  console.log('已手动设置全局PIXI变量');
+                }
+              </script>
             </head>
             <body>
               <canvas id="live2d-canvas"></canvas>
@@ -103,6 +117,14 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                      // 检查PIXI是否可用
                      if (!window.PIXI) {
                        throw new Error('PIXI.js未加载。请访问 #/library-help 页面下载所需库文件。');
+                     }
+                     
+                     // 检查PIXI-Live2D-Display是否可用
+                     if (!window.PIXI.live2d) {
+                       console.error('PIXI.live2d未找到，尝试手动初始化PIXI-Live2D-Display');
+                       // 尝试创建全局live2d对象
+                       window.PIXI.live2d = {};
+                       throw new Error('PIXI-Live2D-Display未加载。请访问 #/library-help 页面下载所需库文件。');
                      }
                     
                     // 设置PIXI最大WebGL上下文设置
@@ -137,11 +159,17 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                     try {
                       window.parent.postMessage({ type: 'live2d-loading', message: '开始加载PIXI-Live2D模型' }, '*');
                       
-                      // 设置PIXI-Live2D-Display环境
-                      if (window.Live2DModel) {
-                        // 等待模型加载
-                        window.Live2DModel.registerTicker(PIXI.Ticker);
-                        model = await window.Live2DModel.from(modelPath, { autoInteract: false });
+                                             // 设置PIXI-Live2D-Display环境
+                       if (window.PIXI && window.PIXI.live2d && window.PIXI.live2d.Live2DModel) {
+                         // 使用PIXI.live2d.Live2DModel
+                         console.log('使用PIXI.live2d.Live2DModel加载模型');
+                         window.PIXI.live2d.Live2DModel.registerTicker(PIXI.Ticker);
+                         model = await window.PIXI.live2d.Live2DModel.from(modelPath, { autoInteract: false });
+                       } else if (window.Live2DModel) {
+                         // 兼容旧版API
+                         console.log('使用window.Live2DModel加载模型');
+                         window.Live2DModel.registerTicker(PIXI.Ticker);
+                         model = await window.Live2DModel.from(modelPath, { autoInteract: false });
                         
                         // 调整模型尺寸和位置
                         const modelWidth = model.width;
