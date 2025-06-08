@@ -99,11 +99,11 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
                     if (!gl) {
                       throw new Error('WebGL不可用。您的浏览器可能不支持WebGL或WebGL已被禁用。');
                     }
-                    
-                    // 检查PIXI是否可用
-                    if (!window.PIXI) {
-                      throw new Error('PIXI.js未加载。请确保PIXI库已正确加载。');
-                    }
+                                        
+                     // 检查PIXI是否可用
+                     if (!window.PIXI) {
+                       throw new Error('PIXI.js未加载。请访问 #/library-help 页面下载所需库文件。');
+                     }
                     
                     // 设置PIXI最大WebGL上下文设置
                     // 解决"Invalid value of '0' passed to 'checkMaxIfStatementsInShader'"错误
@@ -319,6 +319,9 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
     };
   }, [modelPath, width, height, onModelLoaded]);
 
+  // 检查错误信息是否与缺少库相关
+  const isMissingLibraryError = errorDetails && (errorDetails.includes('PIXI.js未加载') || errorDetails.includes('library-help'));
+
   return (
     <div className="live2d-container" style={{ width, height }}>
       <div ref={containerRef} className="live2d-iframe-container" style={{ width, height }}></div>
@@ -328,6 +331,24 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoa
           {errorDetails && (
             <div className="live2d-error-details">
               {errorDetails}
+              {isMissingLibraryError && (
+                <div style={{ marginTop: '15px' }}>
+                  <a 
+                    href="#/library-help" 
+                    style={{ 
+                      display: 'inline-block',
+                      background: '#4285f4',
+                      color: 'white',
+                      padding: '8px 16px',
+                      borderRadius: '4px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    下载缺失的库文件
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </div>

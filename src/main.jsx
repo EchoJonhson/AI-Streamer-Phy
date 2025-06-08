@@ -7,6 +7,7 @@ import App from './App.jsx'
 import HomePage from './pages/HomePage'
 import LivePage from './pages/LivePage'
 import SettingsPage from './pages/SettingsPage'
+import LibraryHelp from './pages/LibraryHelp'
 import MainLayout from './components/layout/MainLayout'
 
 // 将PIXI暴露给window，以便pixi-live2d-display能够自动更新Live2D模型
@@ -29,6 +30,10 @@ const router = createHashRouter([
       {
         path: 'settings',
         element: <SettingsPage />
+      },
+      {
+        path: 'library-help',
+        element: <LibraryHelp />
       }
     ]
   }

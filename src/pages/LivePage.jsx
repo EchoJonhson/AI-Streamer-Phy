@@ -83,6 +83,11 @@ const LivePage = () => {
   // 初始化Live2D环境
   useEffect(() => {
     ensureLive2DEnvironment();
+    
+    // 检查是否存在PIXI库
+    if (!window.PIXI) {
+      console.warn('PIXI.js未加载。Live2D模型可能无法正常显示。');
+    }
   }, []);
 
   // 初始化配置
