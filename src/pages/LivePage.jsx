@@ -8,11 +8,21 @@ const LivePage = () => {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [modelPath, setModelPath] = useState('./live2d/models/wuwuwu/wuwuwu.model3.json');
+  const [modelPath, setModelPath] = useState('');
   const [modelLoading, setModelLoading] = useState(false);
   const [backgroundType, setBackgroundType] = useState('image'); // 'video' or 'image'
   const [backgroundSrc, setBackgroundSrc] = useState('./backgrounds/custom-bg.png');
+  const [debugMode, setDebugMode] = useState(true);
   const navigate = useNavigate();
+
+  // 初始化模型路径
+  useEffect(() => {
+    // 使用完整的相对路径
+    const basePath = window.location.origin;
+    const fullModelPath = new URL('./live2d/models/wuwuwu/wuwuwu.model3.json', basePath).href;
+    console.log('设置模型路径:', fullModelPath);
+    setModelPath(fullModelPath);
+  }, []);
 
   // 检查用户是否已登录
   useEffect(() => {
@@ -48,11 +58,21 @@ const LivePage = () => {
 
   // 检查模型文件是否存在
   useEffect(() => {
+    if (!modelPath) return;
+    
     const checkModelExists = async () => {
       try {
         setModelLoading(true);
-        console.log(`尝试加载模型: ${modelPath}`);
-        // 不使用HEAD请求，因为可能会有CORS问题
+        console.log(`尝试检查模型: ${modelPath}`);
+        
+        const response = await fetch(modelPath);
+        if (response.ok) {
+          console.log(`模型文件存在: ${modelPath}`);
+          const jsonData = await response.json();
+          console.log('模型配置:', jsonData);
+        } else {
+          console.error(`模型文件不存在: ${modelPath}, 状态: ${response.status}`);
+        }
       } catch (error) {
         console.error(`检查模型文件失败: ${error.message}`);
       } finally {
@@ -91,6 +111,11 @@ const LivePage = () => {
     }, 1000);
   };
 
+  // 切换调试模式
+  const toggleDebugMode = () => {
+    setDebugMode(prev => !prev);
+  };
+
   return (
     <div className="live-page">
       <div className="live-container">
@@ -99,18 +124,29 @@ const LivePage = () => {
           <LiveBackground type={backgroundType} src={backgroundSrc} />
           
           {/* 调试信息 */}
-          <div className="debug-info">
-            <p>当前模型路径: {modelPath}</p>
-            <p>模型状态: {modelLoading ? '检查中...' : '已检查'}</p>
-            <p>背景类型: {backgroundType}</p>
-          </div>
+          {debugMode && (
+            <div className="debug-info">
+              <p>当前模型路径: {modelPath}</p>
+              <p>模型状态: {modelLoading ? '检查中...' : '已检查'}</p>
+              <p>背景类型: {backgroundType}</p>
+              <button onClick={toggleDebugMode}>隐藏调试信息</button>
+            </div>
+          )}
+          
+          {!debugMode && (
+            <button className="debug-toggle" onClick={toggleDebugMode}>
+              显示调试信息
+            </button>
+          )}
           
           {/* 集成Live2D模型组件 */}
-          <Live2DModelComponent 
-            modelPath={modelPath}
-            width={window.innerWidth * 0.6}
-            height={window.innerHeight - 150}
-          />
+          {modelPath && (
+            <Live2DModelComponent 
+              modelPath={modelPath}
+              width={window.innerWidth * 0.6}
+              height={window.innerHeight - 150}
+            />
+          )}
         </div>
         
         <div className="chat-container">

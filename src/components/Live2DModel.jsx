@@ -13,6 +13,43 @@ PIXI.LoaderResource.setExtensionXhrType('json', PIXI.LoaderResource.XHR_RESPONSE
 // 设置全局CORS模式
 PIXI.settings.CORS_MODE = 'anonymous';
 
+// 确保live2dcubismcore.min.js已经加载
+const ensureCubismCoreLoaded = async () => {
+  console.log('检查Live2DCubismCore是否已加载');
+  
+  if (!window.Live2DCubismCore) {
+    console.log('Live2DCubismCore未加载，尝试加载...');
+    
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = './live2d/core/live2dcubismcore.min.js';
+      script.async = true;
+      document.body.appendChild(script);
+      
+      script.onload = () => {
+        console.log('Live2DCubismCore加载成功');
+        resolve();
+      };
+      
+      script.onerror = () => {
+        console.error('无法加载Live2D核心库');
+        reject(new Error('无法加载Live2D核心库'));
+      };
+      
+      // 设置超时
+      setTimeout(() => {
+        if (!window.Live2DCubismCore) {
+          console.error('加载Live2D核心库超时');
+          reject(new Error('加载Live2D核心库超时'));
+        }
+      }, 5000);
+    });
+  } else {
+    console.log('Live2DCubismCore已加载');
+    return Promise.resolve();
+  }
+};
+
 const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
   const canvasRef = useRef(null);
   const appRef = useRef(null);
@@ -57,85 +94,39 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
   });
 
   useEffect(() => {
-    // 初始化PIXI应用
-    const app = new PIXI.Application({
-      view: canvasRef.current,
-      autoStart: true,
-      width,
-      height,
-      backgroundColor: 0x00000000, // 完全透明背景
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-      transparent: true, // 确保应用背景透明
-    });
+    let app = null;
     
-    appRef.current = app;
-          
-    // 加载Live2D模型
-    const loadModel = async () => {
+    // 初始化PIXI应用和加载模型
+    const initializeApp = async () => {
       try {
-        setLoadingState('加载模型中...');
-        console.log('开始加载模型:', modelPath);
-        
-        // 确保live2dcubismcore.min.js已经加载
-        if (!window.Live2DCubismCore) {
-          const script = document.createElement('script');
-          script.src = './live2d/core/live2dcubismcore.min.js';
-          script.async = true;
-          document.body.appendChild(script);
-          
-          await new Promise((resolve, reject) => {
-            script.onload = resolve;
-            script.onerror = () => reject(new Error('无法加载Live2D核心库'));
-            
-            // 设置超时
-            setTimeout(() => {
-              if (!window.Live2DCubismCore) {
-                reject(new Error('加载Live2D核心库超时'));
-              }
-            }, 5000);
-          });
-        }
-        
-        // 从指定路径加载模型
-        const model = await Live2DModel.from(modelPath, {
-          autoInteract: false, // 关闭自动交互，我们将自定义交互
-          autoUpdate: true,
-          motionPreload: true,
+        // 初始化PIXI应用
+        console.log('初始化PIXI应用，宽度:', width, '高度:', height);
+        app = new PIXI.Application({
+          view: canvasRef.current,
+          autoStart: true,
+          width,
+          height,
+          backgroundColor: 0x00000000, // 完全透明背景
+          resolution: window.devicePixelRatio || 1,
+          autoDensity: true,
+          transparent: true, // 确保应用背景透明
         });
         
-        console.log('模型加载成功:', model);
-        setLoadingState('模型加载成功');
-          
-        // 设置模型属性
-        model.anchor.set(0.5, 0.5);
+        appRef.current = app;
         
-        // 将模型位置调整到画布的底部，按照要求调整
-        model.position.set(width / 2, height * 1.2);
-          
-        // 调整模型大小为2.5倍
-        const scale = Math.min(width / model.width, height / model.height) * 2.5;
-        model.scale.set(scale, scale);
-          
-        // 添加模型到舞台
-        app.stage.addChild(model);
+        // 确保核心库已加载
+        await ensureCubismCoreLoaded();
         
-        // 保存模型引用
-        modelRef.current = model;
-        
-        // 设置交互
-        setupInteraction(model, app);
-        
-        // 设置随机眨眼
-        setupRandomBlinking(model);
+        // 加载模型
+        await loadModel(app);
       } catch (error) {
-        console.error('加载Live2D模型失败:', error);
-        setLoadingState(`加载失败`);
+        console.error('初始化应用失败:', error);
+        setLoadingState('初始化失败');
         setErrorDetails(`错误详情: ${error.message}\n堆栈: ${error.stack}`);
       }
     };
     
-    loadModel();
+    initializeApp();
 
     // 清理函数
     return () => {
@@ -159,6 +150,67 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
       }
     };
   }, [modelPath, width, height]);
+  
+  // 加载Live2D模型
+  const loadModel = async (app) => {
+    try {
+      setLoadingState('加载模型中...');
+      console.log('开始加载模型:', modelPath);
+      
+      // 检查模型文件是否可访问
+      try {
+        const response = await fetch(modelPath);
+        console.log('模型文件请求状态:', response.status, response.statusText);
+        if (!response.ok) {
+          throw new Error(`模型文件请求失败: ${response.status} ${response.statusText}`);
+        }
+        
+        const modelJson = await response.json();
+        console.log('模型配置内容:', modelJson);
+      } catch (fetchError) {
+        console.error('模型文件预检失败:', fetchError);
+        setErrorDetails(`模型文件预检失败: ${fetchError.message}`);
+        throw fetchError;
+      }
+      
+      // 从指定路径加载模型
+      console.log('开始使用Live2DModel.from加载模型');
+      const model = await Live2DModel.from(modelPath, {
+        autoInteract: false, // 关闭自动交互，我们将自定义交互
+        autoUpdate: true,
+        motionPreload: true,
+      });
+      
+      console.log('模型加载成功:', model);
+      setLoadingState('模型加载成功');
+        
+      // 设置模型属性
+      model.anchor.set(0.5, 0.5);
+        
+      // 将模型位置调整到画布的底部，按照要求调整
+      model.position.set(width / 2, height * 1.2);
+        
+      // 调整模型大小为2.5倍
+      const scale = Math.min(width / model.width, height / model.height) * 2.5;
+      model.scale.set(scale, scale);
+        
+      // 添加模型到舞台
+      app.stage.addChild(model);
+      
+      // 保存模型引用
+      modelRef.current = model;
+      
+      // 设置交互
+      setupInteraction(model, app);
+      
+      // 设置随机眨眼
+      setupRandomBlinking(model);
+    } catch (error) {
+      console.error('加载Live2D模型失败:', error);
+      setLoadingState(`加载失败`);
+      setErrorDetails(`错误详情: ${error.message}\n堆栈: ${error.stack}`);
+    }
+  };
   
   // 设置随机眨眼
   const setupRandomBlinking = (model) => {
@@ -352,7 +404,7 @@ const Live2DModelComponent = ({ modelPath, width = 300, height = 500 }) => {
           <div className="loading-text">{loadingState}</div>
           {errorDetails && (
             <div className="error-details">
-              {errorDetails}
+              <pre>{errorDetails}</pre>
             </div>
           )}
         </div>
