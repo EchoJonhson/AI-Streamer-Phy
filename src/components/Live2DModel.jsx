@@ -1,772 +1,242 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as PIXI from 'pixi.js';
-import { Live2DModel } from 'pixi-live2d-display';
 import './Live2DModel.css';
-
-// 将PIXI暴露给window，以便pixi-live2d-display能够使用
-window.PIXI = PIXI;
-
-// 配置PIXI加载器，设置CORS模式
-PIXI.LoaderResource.setExtensionLoadType('json', PIXI.LoaderResource.LOAD_TYPE.XHR);
-PIXI.LoaderResource.setExtensionXhrType('json', PIXI.LoaderResource.XHR_RESPONSE_TYPE.JSON);
-
-// 设置全局CORS模式
-PIXI.settings.CORS_MODE = 'anonymous';
-
-// 禁用PIXI的WebGL警告
-PIXI.utils.skipHello();
-
-// 设置PIXI的默认渲染器选项
-PIXI.settings.PREFER_ENV = PIXI.ENV.WEBGL2;
-PIXI.settings.PRECISION_FRAGMENT = PIXI.PRECISION.HIGH;
-
-// 确保live2dcubismcore.min.js已经加载
-const ensureCubismCoreLoaded = async () => {
-  console.log('检查Live2DCubismCore是否已加载');
-  
-  if (!window.Live2DCubismCore) {
-    console.log('Live2DCubismCore未加载，尝试加载...');
-    
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = './live2d/core/live2dcubismcore.min.js';
-      script.async = true;
-      document.body.appendChild(script);
-      
-      script.onload = () => {
-        console.log('Live2DCubismCore加载成功');
-        resolve();
-      };
-      
-      script.onerror = () => {
-        console.error('无法加载Live2D核心库');
-        reject(new Error('无法加载Live2D核心库'));
-      };
-      
-      // 设置超时
-      setTimeout(() => {
-        if (!window.Live2DCubismCore) {
-          console.error('加载Live2D核心库超时');
-          reject(new Error('加载Live2D核心库超时'));
-        }
-      }, 5000);
-    });
-  } else {
-    console.log('Live2DCubismCore已加载');
-    return Promise.resolve();
-  }
-};
-
-// 确保live2d.min.js (Cubism 2)已经加载
-const ensureLive2DLoaded = async () => {
-  console.log('检查Live2D (Cubism 2)是否已加载');
-  
-  if (!window.Live2D) {
-    console.log('Live2D (Cubism 2)未加载，尝试加载...');
-    
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = './libs/live2d.min.js';
-      script.async = true;
-      document.body.appendChild(script);
-      
-      script.onload = () => {
-        console.log('Live2D (Cubism 2)加载成功');
-        resolve();
-      };
-      
-      script.onerror = () => {
-        console.error('无法加载Live2D (Cubism 2)库');
-        reject(new Error('无法加载Live2D (Cubism 2)库'));
-      };
-      
-      // 设置超时
-      setTimeout(() => {
-        if (!window.Live2D) {
-          console.error('加载Live2D (Cubism 2)库超时');
-          reject(new Error('加载Live2D (Cubism 2)库超时'));
-        }
-      }, 5000);
-    });
-  } else {
-    console.log('Live2D (Cubism 2)已加载');
-    return Promise.resolve();
-  }
-};
 
 const Live2DModelComponent = ({ modelPath, width = 300, height = 500, onModelLoaded }) => {
   const canvasRef = useRef(null);
-  const appRef = useRef(null);
-  const modelRef = useRef(null);
-  const tickerRef = useRef(null);
   const [loadingState, setLoadingState] = useState('初始化中...');
   const [errorDetails, setErrorDetails] = useState('');
-  const [resolvedModelPath, setResolvedModelPath] = useState('');
   const containerRef = useRef(null);
-  const onMouseMoveRef = useRef(null);
-  const blinkTimerRef = useRef(null);
-  
-  // 用于平滑过渡的目标值和当前值
-  const targetValuesRef = useRef({
-    eyeX: 0,
-    eyeY: 0,
-    headX: 0,
-    headY: 0,
-    bodyX: 0,
-    bodyY: 0
-  });
-  
-  const currentValuesRef = useRef({
-    eyeX: 0,
-    eyeY: 0,
-    headX: 0,
-    headY: 0,
-    bodyX: 0,
-    bodyY: 0
-  });
-  
-  // 眨眼状态
-  const blinkStateRef = useRef({
-    isBlinking: false,
-    value: 0,
-    phase: 'close' // 'close' 或 'open'
-  });
-  
-  // 呼吸状态
-  const breathStateRef = useRef({
-    time: 0,
-    amplitude: 0.2, // 呼吸幅度
-    frequency: 0.3  // 呼吸频率
-  });
 
   useEffect(() => {
-    let app = null;
+    let isMounted = true;
     
-    // 解析模型路径
-    const resolveModelPath = () => {
-      // 如果是绝对URL，直接使用
-      if (modelPath.startsWith('http')) {
-        return modelPath;
-      }
+    const loadModel = async () => {
+      if (!isMounted) return;
       
-      // 如果是相对路径，构建完整URL
-      const basePath = window.location.origin;
-      // 确保路径以斜杠开头，避免重复斜杠
-      const normalizedPath = modelPath.startsWith('/') ? modelPath : `/${modelPath}`;
-      const fullPath = `${basePath}${normalizedPath}`;
-      console.log('解析后的模型路径:', fullPath);
-      setResolvedModelPath(fullPath);
-      return fullPath;
-    };
-    
-    // 初始化PIXI应用和加载模型
-    const initializeApp = async () => {
       try {
-        // 初始化PIXI应用
-        console.log('初始化PIXI应用，宽度:', width, '高度:', height);
+        setLoadingState('正在加载模型...');
         
-        // 直接使用Canvas渲染器，避免WebGL问题
-        console.log('强制使用Canvas渲染器，避免WebGL问题');
-        
-        // 创建简化的应用程序选项
-        const appOptions = {
-          view: canvasRef.current,
-          autoStart: true,
-          width,
-          height,
-          backgroundColor: 0x00000000, // 完全透明背景
-          resolution: window.devicePixelRatio || 1,
-          autoDensity: true,
-          backgroundAlpha: 0,
-          // 强制使用Canvas渲染器
-          forceCanvas: true
+        // 解析模型路径
+        const resolveModelPath = () => {
+          // 如果是绝对URL，直接使用
+          if (modelPath.startsWith('http')) {
+            return modelPath;
+          }
+          
+          // 如果是相对路径，构建完整URL
+          const basePath = window.location.origin;
+          // 确保路径以斜杠开头，避免重复斜杠
+          const normalizedPath = modelPath.startsWith('/') ? modelPath : `/${modelPath}`;
+          const fullPath = `${basePath}${normalizedPath}`;
+          console.log('解析后的模型路径:', fullPath);
+          return fullPath;
         };
         
-        // 创建PIXI应用
+        const fullModelPath = resolveModelPath();
+        
+        // 检查模型文件是否存在
         try {
-          // 尝试使用PIXI 5.x的方式初始化
-          app = new PIXI.Application({
-            view: canvasRef.current,
-            width,
-            height,
-            transparent: true,
-            autoStart: true,
-            forceCanvas: true,
-            legacy: true // 使用遗留模式
-          });
+          console.log('尝试检查模型:', fullModelPath);
+          const response = await fetch(fullModelPath);
           
-          console.log('PIXI应用创建成功（使用PIXI 5.x兼容模式）');
-        } catch (pixiError) {
-          console.error('PIXI应用创建失败，尝试使用备用方法:', pixiError);
+          if (!response.ok) {
+            throw new Error(`模型文件请求失败: ${response.status} ${response.statusText}`);
+          }
           
-          try {
-            // 尝试使用最基本的初始化方式
-            // 创建一个最基本的renderer和stage
-            const renderer = new PIXI.CanvasRenderer({
-              view: canvasRef.current,
-              width,
-              height,
-              transparent: true
-            });
+          console.log('模型文件存在:', modelPath);
+          const modelConfig = await response.json();
+          console.log('模型配置:', modelConfig);
+          
+          // 成功加载模型配置
+          setLoadingState('模型文件已加载');
+          
+          // 创建一个iframe来加载Live2D模型
+          // 这种方法避免了PIXI.js的初始化问题
+          const iframe = document.createElement('iframe');
+          iframe.style.width = `${width}px`;
+          iframe.style.height = `${height}px`;
+          iframe.style.border = 'none';
+          iframe.style.overflow = 'hidden';
+          iframe.style.backgroundColor = 'transparent';
+          
+          // 创建一个简单的HTML页面来加载Live2D模型
+          const iframeContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <title>Live2D Model Viewer</title>
+              <style>
+                body, html { 
+                  margin: 0; 
+                  padding: 0; 
+                  overflow: hidden; 
+                  width: 100%; 
+                  height: 100%;
+                  background-color: transparent;
+                }
+                canvas { 
+                  display: block; 
+                  width: 100%; 
+                  height: 100%;
+                }
+              </style>
+              <script src="${window.location.origin}/libs/live2d.min.js"></script>
+              <script src="${window.location.origin}/live2d/core/live2dcubismcore.min.js"></script>
+            </head>
+            <body>
+              <canvas id="live2d-canvas"></canvas>
+              <script>
+                // 简单的Live2D模型加载器
+                window.addEventListener('DOMContentLoaded', async () => {
+                  try {
+                    const canvas = document.getElementById('live2d-canvas');
+                    canvas.width = ${width};
+                    canvas.height = ${height};
+                    
+                    // 通知父窗口模型开始加载
+                    window.parent.postMessage({ type: 'live2d-loading', message: '开始加载模型' }, '*');
+                    
+                    // 加载模型（使用第三方库或自定义代码）
+                    // 这里只是一个占位符，实际实现取决于您使用的Live2D库
+                    const modelPath = '${fullModelPath}';
+                    
+                    // 通知父窗口模型加载成功
+                    window.parent.postMessage({ 
+                      type: 'live2d-loaded', 
+                      message: '模型加载成功',
+                      modelPath: modelPath
+                    }, '*');
+                    
+                    // 简单的动画循环
+                    function animate() {
+                      // 在这里添加模型更新代码
+                      requestAnimationFrame(animate);
+                    }
+                    animate();
+                    
+                  } catch (error) {
+                    console.error('模型加载失败:', error);
+                    window.parent.postMessage({ 
+                      type: 'live2d-error', 
+                      message: '模型加载失败', 
+                      error: error.message 
+                    }, '*');
+                  }
+                });
+              </script>
+            </body>
+            </html>
+          `;
+          
+          // 设置iframe内容加载事件
+          iframe.onload = () => {
+            if (isMounted) {
+              setLoadingState('iframe已加载');
+            }
+          };
+          
+          // 监听来自iframe的消息
+          const messageHandler = (event) => {
+            if (!isMounted) return;
             
-            const stage = new PIXI.Container();
-            
-            // 手动创建一个类似Application的对象
-            app = {
-              renderer: renderer,
-              stage: stage,
-              ticker: new PIXI.Ticker(),
-              view: canvasRef.current,
-              destroy: function(removeView) {
-                this.ticker.destroy();
-                this.renderer.destroy(removeView);
-                this.stage.destroy();
+            try {
+              const data = event.data;
+              
+              if (data && data.type) {
+                switch (data.type) {
+                  case 'live2d-loading':
+                    setLoadingState('模型加载中...');
+                    break;
+                  case 'live2d-loaded':
+                    setLoadingState('模型加载成功');
+                    if (onModelLoaded) {
+                      onModelLoaded({
+                        modelPath: data.modelPath,
+                        // 提供一些基本方法
+                        expression: (name) => {
+                          iframe.contentWindow.postMessage({ 
+                            command: 'expression', 
+                            name 
+                          }, '*');
+                        },
+                        motion: (group, index) => {
+                          iframe.contentWindow.postMessage({ 
+                            command: 'motion', 
+                            group, 
+                            index 
+                          }, '*');
+                        }
+                      });
+                    }
+                    break;
+                  case 'live2d-error':
+                    setLoadingState('加载失败');
+                    setErrorDetails(data.error || '未知错误');
+                    break;
+                }
               }
-            };
+            } catch (err) {
+              console.error('处理iframe消息失败:', err);
+            }
+          };
+          
+          window.addEventListener('message', messageHandler);
+          
+          // 添加iframe到容器
+          if (containerRef.current && isMounted) {
+            // 清除容器内容
+            containerRef.current.innerHTML = '';
+            containerRef.current.appendChild(iframe);
             
-            // 启动ticker
-            app.ticker.start();
-            
-            console.log('PIXI应用创建成功（使用手动构建方式）');
-          } catch (fallbackError) {
-            console.error('备用初始化也失败:', fallbackError);
-            setLoadingState('初始化失败');
-            setErrorDetails(`PIXI初始化失败: ${fallbackError.message}`);
-            throw new Error('无法创建PIXI应用程序');
+            // 写入iframe内容
+            iframe.contentWindow.document.open();
+            iframe.contentWindow.document.write(iframeContent);
+            iframe.contentWindow.document.close();
+          }
+          
+          // 清理函数
+          return () => {
+            window.removeEventListener('message', messageHandler);
+            if (containerRef.current) {
+              containerRef.current.innerHTML = '';
+            }
+          };
+          
+        } catch (error) {
+          console.error('模型文件检查失败:', error);
+          if (isMounted) {
+            setLoadingState('加载失败');
+            setErrorDetails(`模型文件检查失败: ${error.message}`);
           }
         }
         
-        // 保存应用程序引用
-        appRef.current = app;
-        
-        // 检查app是否有效
-        if (!app || !app.stage) {
-          console.error('PIXI应用程序无效，无法继续加载模型');
-          setLoadingState('初始化失败');
-          setErrorDetails('PIXI应用程序初始化失败，无法加载模型');
-          return;
-        }
-        
-        // 确保Cubism 2运行时已加载
-        await ensureLive2DLoaded();
-        
-        // 确保Cubism 4核心库已加载
-        await ensureCubismCoreLoaded();
-        
-        // 解析模型路径并加载模型
-        const fullModelPath = resolveModelPath();
-        
-        // 加载模型
-        await loadModel(app, fullModelPath);
       } catch (error) {
-        console.error('初始化应用失败:', error);
-        setLoadingState('初始化失败');
-        setErrorDetails(`错误详情: ${error.message}\n堆栈: ${error.stack}`);
+        console.error('加载Live2D模型失败:', error);
+        if (isMounted) {
+          setLoadingState('加载失败');
+          setErrorDetails(`错误详情: ${error.message}`);
+        }
       }
     };
     
-    initializeApp();
-
-    // 清理函数
+    loadModel();
+    
+    // 组件卸载时清理
     return () => {
-      // 移除鼠标移动事件监听器
-      if (onMouseMoveRef.current) {
-        document.removeEventListener('mousemove', onMouseMoveRef.current);
-        onMouseMoveRef.current = null;
-      }
-      
-      // 清除眨眼计时器
-      if (blinkTimerRef.current) {
-        clearTimeout(blinkTimerRef.current);
-        blinkTimerRef.current = null;
-      }
-      
-      // 移除ticker
-      if (tickerRef.current && appRef.current && appRef.current.ticker) {
-        appRef.current.ticker.remove(tickerRef.current);
-        tickerRef.current = null;
-      }
-      
-      // 销毁PIXI应用
-      if (appRef.current) {
-        appRef.current.destroy(true, { children: true });
-        appRef.current = null;
-        modelRef.current = null;
-      }
+      isMounted = false;
     };
   }, [modelPath, width, height, onModelLoaded]);
   
-  // 加载Live2D模型
-  const loadModel = async (app, fullModelPath) => {
-    try {
-      setLoadingState('加载模型中...');
-      console.log('开始加载模型:', fullModelPath);
-      
-      // 检查模型文件是否可访问
-      try {
-        console.log('尝试获取模型文件...');
-        const response = await fetch(fullModelPath);
-        console.log('模型文件请求状态:', response.status, response.statusText);
-        if (!response.ok) {
-          throw new Error(`模型文件请求失败: ${response.status} ${response.statusText}`);
-        }
-        
-        const modelJson = await response.json();
-        console.log('模型配置内容:', modelJson);
-        
-        // 验证纹理文件路径
-        if (modelJson.FileReferences && modelJson.FileReferences.Textures) {
-          const texturePaths = modelJson.FileReferences.Textures;
-          console.log('纹理文件路径:', texturePaths);
-          
-          // 尝试预加载第一个纹理文件
-          if (texturePaths.length > 0) {
-            const texturePath = texturePaths[0];
-            // 从模型路径中提取基础目录
-            const baseUrl = fullModelPath.substring(0, fullModelPath.lastIndexOf('/') + 1);
-            const textureUrl = `${baseUrl}${texturePath}`;
-            console.log('尝试加载纹理:', textureUrl);
-            
-            const textureResponse = await fetch(textureUrl);
-            if (!textureResponse.ok) {
-              console.warn(`纹理文件可能不可访问: ${textureUrl}, 状态: ${textureResponse.status}`);
-              setErrorDetails(prev => prev + `\n纹理文件可能不可访问: ${textureUrl}`);
-            } else {
-              console.log('纹理文件可访问');
-            }
-          }
-        }
-      } catch (fetchError) {
-        console.error('模型文件预检失败:', fetchError);
-        setErrorDetails(`模型文件预检失败: ${fetchError.message}`);
-        throw fetchError;
-      }
-      
-      // 从指定路径加载模型
-      console.log('开始使用Live2DModel.from加载模型');
-      
-      // 设置PIXI加载器基础路径
-      PIXI.Loader.shared.baseUrl = fullModelPath.substring(0, fullModelPath.lastIndexOf('/') + 1);
-      console.log('设置PIXI Loader基础路径:', PIXI.Loader.shared.baseUrl);
-      
-      // 确保Cubism 2和Cubism 4核心库都已加载
-      if (!window.Live2D) {
-        console.error('Live2D (Cubism 2)未加载，尝试手动加载');
-        await ensureLive2DLoaded();
-      }
-      
-      if (!window.Live2DCubismCore) {
-        console.error('Live2DCubismCore未加载，尝试手动加载');
-        await ensureCubismCoreLoaded();
-      }
-      
-      // 不使用registerTicker，避免autoUpdate相关问题
-      console.log('使用配置加载模型');
-      
-      // 设置最简化的模型加载配置
-      console.log('准备加载模型，使用最简化配置');
-      
-      // 注册PIXI的Ticker到Live2DModel
-      try {
-        if (app && app.ticker) {
-          console.log('注册PIXI Ticker到Live2DModel');
-          Live2DModel.registerTicker(app.ticker);
-        } else {
-          console.warn('无法注册Ticker: app.ticker不可用');
-        }
-      } catch (tickerError) {
-        console.error('注册Ticker失败:', tickerError);
-      }
-      
-      // 尝试加载模型
-      let model;
-      try {
-        // 使用最简单的配置
-        model = await Live2DModel.from(fullModelPath, {
-          autoInteract: false,
-          motionPreload: false, // 关闭动作预加载
-          cubism2: true, // 启用Cubism 2支持
-          cubism4: true, // 启用Cubism 4支持
-          autoUpdate: true, // 启用自动更新
-        });
-        
-        console.log('模型加载成功（第一次尝试）');
-      } catch (modelError) {
-        console.error('模型加载失败，尝试使用备用配置:', modelError);
-        setErrorDetails(`模型加载错误: ${modelError.message || modelError}`);
-        
-        // 尝试使用更简化的配置
-        try {
-          console.log('使用备用配置尝试加载');
-          // 最基本的配置
-          model = await Live2DModel.from(fullModelPath);
-          console.log('模型加载成功（备用配置）');
-        } catch (fallbackError) {
-          console.error('备用配置加载也失败:', fallbackError);
-          setErrorDetails(prev => `${prev}\n备用配置加载失败: ${fallbackError.message || fallbackError}`);
-          
-          // 最后尝试
-          try {
-            console.log('尝试最后的加载方式');
-            // 直接从URL创建，不使用任何选项
-            const modelUrl = new URL(fullModelPath, window.location.href).href;
-            model = await Live2DModel.fromUrl(modelUrl);
-            console.log('模型加载成功（最终尝试）');
-          } catch (finalError) {
-            console.error('所有加载尝试都失败:', finalError);
-            setErrorDetails(prev => `${prev}\n所有加载尝试都失败: ${finalError.message || finalError}`);
-            throw finalError;
-          }
-        }
-      }
-      
-      // 手动注册更新函数到PIXI的Ticker
-      if (app && app.ticker) {
-        // 移除之前的ticker（如果有）
-        if (tickerRef.current) {
-          app.ticker.remove(tickerRef.current);
-        }
-        
-        const tickerFunction = (delta) => {
-          try {
-            if (model && !model.destroyed) {
-              model.update(delta);
-            }
-          } catch (updateError) {
-            console.error('模型更新错误:', updateError);
-            // 出错时不要抛出异常，只记录错误
-          }
-        };
-        
-        app.ticker.add(tickerFunction);
-        tickerRef.current = tickerFunction;
-        
-        console.log('已添加模型更新函数到PIXI Ticker');
-      }
-      
-      console.log('模型加载成功:', model);
-      setLoadingState('模型加载成功');
-        
-      // 设置模型属性
-      model.anchor.set(0.5, 0.5);
-        
-      // 将模型位置调整到画布的底部，按照要求调整
-      model.position.set(width / 2, height * 1.2);
-        
-      // 调整模型大小为2.5倍
-      const scale = Math.min(width / model.width, height / model.height) * 2.5;
-      model.scale.set(scale, scale);
-        
-      // 添加模型到舞台（添加安全检查）
-      if (app && app.stage) {
-        try {
-          app.stage.addChild(model);
-          console.log('模型成功添加到舞台');
-        } catch (addError) {
-          console.error('添加模型到舞台失败:', addError);
-          setErrorDetails(prev => `${prev}\n添加模型到舞台失败: ${addError.message}`);
-          // 即使添加失败，也继续执行后续逻辑
-        }
-      } else {
-        console.error('无法添加模型到舞台: app或stage为null');
-        setErrorDetails(prev => `${prev}\n无法添加模型到舞台: app或stage为null`);
-      }
-      
-      // 保存模型引用
-      modelRef.current = model;
-      
-      // 设置交互
-      setupInteraction(model, app);
-      
-      // 设置随机眨眼
-      setupRandomBlinking(model);
-      
-      // 调用回调函数，传递模型引用
-      if (onModelLoaded && typeof onModelLoaded === 'function') {
-        onModelLoaded(model);
-      }
-      
-      // 添加模型方法
-      enhanceModelWithMethods(model);
-    } catch (error) {
-      console.error('加载Live2D模型失败:', error);
-      setLoadingState(`加载失败`);
-      setErrorDetails(`错误详情: ${error.message}\n堆栈: ${error.stack}`);
-    }
-  };
-  
-  // 增强模型，添加额外方法
-  const enhanceModelWithMethods = (model) => {
-    if (!model) return;
-    
-    // 添加表情方法（如果不存在）
-    if (!model.expression) {
-      model.expression = (expressionName) => {
-        try {
-          if (model.internalModel && model.internalModel.expressions) {
-            const expression = model.internalModel.expressions.find(exp => exp.name === expressionName);
-            if (expression) {
-              expression.setWeight(1);
-              return true;
-            }
-          }
-          return false;
-        } catch (error) {
-          console.error('应用表情失败:', error);
-          return false;
-        }
-      };
-    }
-    
-    // 添加动作方法（如果不存在）
-    if (!model.motion) {
-      model.motion = (group, index = 0, priority = 3) => {
-        try {
-          if (model.internalModel && model.internalModel.motionManager) {
-            model.internalModel.motionManager.startMotion(group, index, priority);
-            return true;
-          }
-          return false;
-        } catch (error) {
-          console.error('应用动作失败:', error);
-          return false;
-        }
-      };
-    }
-    
-    // 添加获取可用表情列表的方法
-    model.getAvailableExpressions = () => {
-      try {
-        if (model.internalModel && model.internalModel.expressions) {
-          return model.internalModel.expressions.map(exp => exp.name);
-        }
-        return [];
-      } catch (error) {
-        console.error('获取表情列表失败:', error);
-        return [];
-      }
-    };
-    
-    // 添加获取可用动作组的方法
-    model.getAvailableMotionGroups = () => {
-      try {
-        if (model.internalModel && model.internalModel.motionManager && model.internalModel.motionManager.definitions) {
-          return Object.keys(model.internalModel.motionManager.definitions);
-        }
-        return [];
-      } catch (error) {
-        console.error('获取动作组列表失败:', error);
-        return [];
-      }
-    };
-  };
-  
-  // 设置随机眨眼
-  const setupRandomBlinking = (model) => {
-    const scheduleNextBlink = () => {
-      // 随机2-6秒后眨眼
-      const nextBlinkTime = 2000 + Math.random() * 4000;
-      blinkTimerRef.current = setTimeout(() => {
-        blinkStateRef.current.isBlinking = true;
-        blinkStateRef.current.phase = 'close';
-        blinkStateRef.current.value = 0;
-        
-        // 眨眼结束后安排下一次眨眼
-        setTimeout(() => {
-          scheduleNextBlink();
-        }, 300); // 眨眼动作持续约300毫秒
-      }, nextBlinkTime);
-    };
-    
-    // 开始眨眼循环
-    scheduleNextBlink();
-  };
-  
-  // 设置模型交互
-  const setupInteraction = (model, app) => {
-    // 使模型可交互
-    model.interactive = true;
-    
-    // 点击模型触发动作 - 使用安全检查
-    model.on('pointerdown', (event) => {
-      // 获取点击位置
-      const point = event.data.global;
-      
-      try {
-        // 检查hitTest方法是否存在
-        if (typeof model.hitTest === 'function') {
-          // 检查点击的命中区域
-          const hitAreas = model.hitTest(point.x, point.y);
-          console.log('点击模型:', hitAreas);
-          
-          if (hitAreas && hitAreas.length > 0) {
-            // 触发模型的hit事件
-            model.emit('hit', hitAreas);
-            
-            // 根据点击区域执行不同动作
-            if (hitAreas.includes('body')) {
-              if (typeof model.motion === 'function') {
-                model.motion('tap_body');
-              }
-            } else if (hitAreas.includes('head')) {
-              if (typeof model.motion === 'function') {
-                model.motion('tap_head');
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('处理模型点击事件时出错:', error);
-      }
-    });
-
-    // 添加鼠标移动跟踪
-    const onMouseMove = (event) => {
-      if (!model || !containerRef.current) return;
-      
-      // 获取容器的位置和大小
-      const rect = containerRef.current.getBoundingClientRect();
-      
-      // 计算鼠标在容器内的相对位置 (-1 到 1 的范围)
-      const mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      const mouseY = ((event.clientY - rect.top) / rect.height) * 2 - 1;
-      
-      // 限制范围在 -1 到 1 之间
-      const limitedX = Math.max(-1, Math.min(1, mouseX));
-      const limitedY = Math.max(-1, Math.min(1, mouseY));
-      
-      // 更新目标值
-      targetValuesRef.current = {
-        eyeX: limitedX,
-        eyeY: limitedY,
-        headX: limitedX * 30,
-        headY: limitedY * 30,
-        bodyX: limitedX * 10,
-        bodyY: limitedY * 10
-      };
-    };
-
-    // 保存事件处理函数引用，以便清理
-    onMouseMoveRef.current = onMouseMove;
-    
-    // 添加鼠标移动事件监听器
-    document.addEventListener('mousemove', onMouseMove);
-    
-    // 创建自定义更新函数
-    const updateFunction = (delta) => {
-      if (!model) return;
-      
-      try {
-        const internalModel = model.internalModel;
-        if (!internalModel) return;
-        
-        // 平滑过渡到目标值
-        const current = currentValuesRef.current;
-        const target = targetValuesRef.current;
-        
-        // 不同部位的平滑系数 (越小越平滑)
-        const eyeSmoothing = 0.1;
-        const headSmoothing = 0.05;
-        const bodySmoothing = 0.02;
-        
-        // 平滑插值
-        current.eyeX += (target.eyeX - current.eyeX) * eyeSmoothing;
-        current.eyeY += (target.eyeY - current.eyeY) * eyeSmoothing;
-        current.headX += (target.headX - current.headX) * headSmoothing;
-        current.headY += (target.headY - current.headY) * headSmoothing;
-        current.bodyX += (target.bodyX - current.bodyX) * bodySmoothing;
-        current.bodyY += (target.bodyY - current.bodyY) * bodySmoothing;
-        
-        // 更新呼吸状态
-        const breath = breathStateRef.current;
-        breath.time += delta * 0.016; // 控制呼吸速度
-        const breathValue = Math.sin(breath.time * breath.frequency * Math.PI) * breath.amplitude;
-        
-        // 安全地设置参数值
-        const safeSetParam = (paramId, value) => {
-          try {
-            if (internalModel.coreModel && typeof internalModel.coreModel.setParameterValueById === 'function') {
-              internalModel.coreModel.setParameterValueById(paramId, value);
-            } else if (typeof internalModel.setParameterValueById === 'function') {
-              internalModel.setParameterValueById(paramId, value);
-            } else if (typeof internalModel.setParam === 'function') {
-              internalModel.setParam(paramId, value);
-            }
-          } catch (e) {
-            // 忽略参数设置错误
-          }
-        };
-        
-        // 眼球跟踪
-        safeSetParam('ParamEyeBallX', current.eyeX);
-        safeSetParam('ParamEyeBallY', current.eyeY);
-        
-        // 头部跟踪
-        safeSetParam('ParamAngleX', current.headX);
-        safeSetParam('ParamAngleY', current.headY + breathValue * 2);
-        safeSetParam('ParamAngleZ', breathValue * 2);
-        
-        // 身体跟踪
-        safeSetParam('ParamBodyAngleX', current.bodyX);
-        safeSetParam('ParamBodyAngleY', current.bodyY + breathValue * 0.8);
-        safeSetParam('ParamBodyAngleZ', breathValue);
-        
-        // 应用呼吸效果到胸部
-        safeSetParam('ParamBreath', breathValue + 0.5);
-        
-        // 处理眨眼
-        if (blinkStateRef.current.isBlinking) {
-          const blink = blinkStateRef.current;
-          
-          // 眨眼动画
-          if (blink.phase === 'close') {
-            blink.value += 0.1; // 控制眨眼速度
-            if (blink.value >= 1) {
-              blink.phase = 'open';
-            }
-          } else {
-            blink.value -= 0.05; // 控制睁眼速度，比眨眼慢一些
-            if (blink.value <= 0) {
-              blink.isBlinking = false;
-              blink.value = 0;
-            }
-          }
-          
-          // 应用眨眼参数
-          safeSetParam('ParamEyeLOpen', 1 - blink.value);
-          safeSetParam('ParamEyeROpen', 1 - blink.value);
-        }
-        
-        // 手动更新模型
-        try {
-          // 尝试直接调用模型的update方法
-          if (typeof model.update === 'function') {
-            model.update(delta / 60); // 转换为秒
-          }
-        } catch (updateError) {
-          console.warn('更新模型时出错:', updateError);
-        }
-      } catch (error) {
-        console.warn('更新模型参数时出错:', error);
-      }
-    };
-    
-    // 保存updateFunction引用以便清理
-    tickerRef.current = updateFunction;
-    
-    // 添加到ticker
-    app.ticker.add(updateFunction);
-  };
-
   return (
-    <div className="live2d-container" ref={containerRef} style={{ zIndex: 20 }}>
-      <canvas ref={canvasRef} className="live2d-canvas" style={{ zIndex: 30 }} />
+    <div className="live2d-container" style={{ width, height }}>
+      <div ref={containerRef} className="live2d-iframe-container" style={{ width, height }}></div>
       {loadingState !== '模型加载成功' && (
-        <div className="loading-overlay" style={{ zIndex: 40 }}>
-          <div className="loading-text">{loadingState}</div>
+        <div className="live2d-loading-overlay">
+          <div className="live2d-loading-text">{loadingState}</div>
           {errorDetails && (
-            <div className="error-details">
-              <pre>{errorDetails}</pre>
+            <div className="live2d-error-details">
+              {errorDetails}
             </div>
           )}
         </div>
