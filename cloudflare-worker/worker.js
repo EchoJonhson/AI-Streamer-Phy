@@ -1,5 +1,3 @@
-
-
 /**
  * Hugging Face API代理Worker
  * 用于解决CORS问题并保护API密钥

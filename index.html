@@ -80,8 +80,11 @@
     <!-- Live2D Cubism 4 核心库 -->
     <script src="./live2d/core/live2dcubismcore.min.js"></script>
     
-    <!-- 本地版本的PIXI-Live2D-Display库 -->
+    <!-- PIXI-Live2D-Display库 -->
     <script src="./libs/pixi-live2d-display.min.js"></script>
+    
+    <!-- PIXI-Live2D初始化脚本 -->
+    <script src="./libs/pixi-live2d-initialize.js"></script>
     
     <!-- 备用CDN加载 -->
     <script>
@@ -132,6 +135,13 @@
             var script = document.createElement('script');
             script.src = './libs/pixi-live2d-display.min.js';
             document.head.appendChild(script);
+            
+            // 添加初始化脚本
+            setTimeout(function() {
+              var initScript = document.createElement('script');
+              initScript.src = './libs/pixi-live2d-initialize.js';
+              document.head.appendChild(initScript);
+            }, 100);
           }
         }, 1000); // 延迟检查，确保有足够时间加载
       });
