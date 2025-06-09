@@ -120,6 +120,31 @@ export const useLive2DModel = (modelPath, options = {}) => {
     return null;
   }, []);
   
+  // 确保所有必要的库都已加载
+  const ensureDependencies = useCallback(async () => {
+    // 如果Live2DLoader存在，使用它来加载所有依赖
+    if (window.Live2DLoader) {
+      console.log('使用Live2DLoader加载依赖...');
+      try {
+        const result = await window.Live2DLoader.initLive2D();
+        if (result) {
+          console.log('Live2DLoader初始化成功');
+          return true;
+        } else {
+          console.error('Live2DLoader初始化失败');
+          return false;
+        }
+      } catch (error) {
+        console.error('Live2DLoader加载过程中出错:', error);
+        return false;
+      }
+    } 
+    
+    // 检查依赖是否已加载
+    const dependencyError = checkDependencies();
+    return !dependencyError;
+  }, [checkDependencies]);
+  
   // 尝试检查模型文件是否存在
   const checkModelFile = useCallback(async (path) => {
     try {
@@ -142,10 +167,10 @@ export const useLive2DModel = (modelPath, options = {}) => {
     setLoading(true);
     setError(null);
     
-    // 检查依赖
-    const dependencyError = checkDependencies();
-    if (dependencyError) {
-      setError(dependencyError);
+    // 确保所有依赖都已加载
+    const dependenciesLoaded = await ensureDependencies();
+    if (!dependenciesLoaded) {
+      setError('无法加载必要的库，请刷新页面或查看控制台获取更多信息');
       setLoading(false);
       return;
     }
@@ -209,7 +234,7 @@ export const useLive2DModel = (modelPath, options = {}) => {
       setError(err.message || '加载模型失败');
       setLoading(false);
     }
-  }, [checkDependencies, useSimpleModelLoader, checkModelFile, options]);
+  }, [ensureDependencies, useSimpleModelLoader, checkModelFile, options]);
 
   // 修复模型位置
   const fixModelPosition = useCallback(() => {

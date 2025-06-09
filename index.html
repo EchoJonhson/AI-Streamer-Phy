@@ -74,6 +74,9 @@
     <!-- PIXI.js库 -->
     <script src="https://pixijs.download/v6.5.0/pixi.min.js"></script>
     
+    <!-- PIXI-Live2D加载器 -->
+    <script src="./libs/pixi-live2d-loader.js"></script>
+    
     <!-- Live2D Cubism 2 运行时 -->
     <script src="./libs/live2d.min.js"></script>
     
@@ -129,19 +132,17 @@
             document.head.appendChild(script);
           }
           
-          // 如果PIXI-Live2D-Display未加载，尝试从本地加载
+          // 如果PIXI-Live2D-Display未加载，使用我们的加载器加载
           if (!window.PIXI || !window.PIXI.live2d) {
-            console.warn('尝试使用本地PIXI-Live2D-Display库...');
-            var script = document.createElement('script');
-            script.src = './libs/pixi-live2d-display.min.js';
-            document.head.appendChild(script);
-            
-            // 添加初始化脚本
-            setTimeout(function() {
-              var initScript = document.createElement('script');
-              initScript.src = './libs/pixi-live2d-initialize.js';
-              document.head.appendChild(initScript);
-            }, 100);
+            console.warn('PIXI-Live2D-Display未加载，使用加载器加载');
+            if (window.Live2DLoader) {
+              window.Live2DLoader.initLive2D()
+                .then(function(result) {
+                  console.log('Live2DLoader初始化结果:', result);
+                });
+            } else {
+              console.error('Live2DLoader未加载，无法初始化PIXI-Live2D-Display');
+            }
           }
         }, 1000); // 延迟检查，确保有足够时间加载
       });
