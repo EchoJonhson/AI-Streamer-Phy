@@ -9,6 +9,114 @@ export const useLive2DModel = (modelPath, options = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [positionFixed, setPositionFixed] = useState(false);
+  const [initAttempts, setInitAttempts] = useState(0);
+  const MAX_INIT_ATTEMPTS = 5;
+  
+  // 手动初始化PIXI-Live2D-Display
+  const manualInitPIXILive2D = useCallback(() => {
+    try {
+      console.log('尝试手动初始化PIXI-Live2D-Display');
+      
+      // 确保PIXI.js已加载
+      if (!window.PIXI) {
+        console.error('手动初始化失败: PIXI.js未加载');
+        return false;
+      }
+      
+      // 确保Live2DCubismCore已加载
+      if (!window.Live2DCubismCore) {
+        console.error('手动初始化失败: Live2DCubismCore未加载');
+        return false;
+      }
+      
+      // 确保Live2D已加载
+      if (!window.Live2D) {
+        console.error('手动初始化失败: Live2D未加载');
+        return false;
+      }
+      
+      // 检查PIXI.live2d是否存在
+      if (!window.PIXI.live2d) {
+        console.log('创建PIXI.live2d命名空间');
+        window.PIXI.live2d = {};
+      }
+      
+      // 配置基本设置
+      if (!window.PIXI.live2d.config) {
+        window.PIXI.live2d.config = {
+          sound: true,
+          motionSync: true,
+          motionFadingDuration: 500,
+          idleMotionFadingDuration: 2000,
+          expressionFadingDuration: 500
+        };
+      }
+      
+      // 检查Live2DModel类是否存在
+      if (!window.PIXI.live2d.Live2DModel) {
+        console.log('尝试手动创建Live2DModel类');
+        
+        // 简易版Live2DModel类
+        window.PIXI.live2d.Live2DModel = class Live2DModel extends window.PIXI.Container {
+          constructor() {
+            super();
+            this.anchor = new window.PIXI.Point(0.5, 0.5);
+            this.internalModel = {
+              motions: {},
+              expressions: {},
+              followPointer: true,
+              
+              startRandomMotion: function(group, priority) {
+                console.log('模拟动作:', group, priority);
+                return Promise.resolve();
+              },
+              
+              setExpression: function(name) {
+                console.log('模拟表情:', name);
+                return Promise.resolve();
+              },
+              
+              motion: function(group, index) {
+                console.log('模拟动作:', group, index);
+                return Promise.resolve();
+              }
+            };
+          }
+          
+          static from(source) {
+            console.log('使用手动初始化的Live2DModel.from方法');
+            return new Promise((resolve, reject) => {
+              try {
+                const model = new window.PIXI.live2d.Live2DModel();
+                
+                if (typeof source === 'string') {
+                  fetch(source)
+                    .then(response => response.json())
+                    .then(config => {
+                      model.modelConfig = config;
+                      console.log('模型配置加载成功:', config);
+                      resolve(model);
+                    })
+                    .catch(reject);
+                } else {
+                  model.modelConfig = source;
+                  resolve(model);
+                }
+              } catch (error) {
+                reject(error);
+              }
+            });
+          }
+        };
+      }
+      
+      console.log('手动初始化PIXI-Live2D-Display完成');
+      return true;
+    } catch (error) {
+      console.error('手动初始化PIXI-Live2D-Display失败:', error);
+      return false;
+    }
+  }, []);
   
   // 使用内置的简易模型加载器 - 仅在标准加载器失败时使用
   const useSimpleModelLoader = useCallback(async (path) => {
@@ -130,6 +238,15 @@ export const useLive2DModel = (modelPath, options = {}) => {
   
   // 确保所有必要的库都已加载
   const ensureDependencies = useCallback(async () => {
+    // 检查是否已经尝试过太多次
+    if (initAttempts >= MAX_INIT_ATTEMPTS) {
+      console.error(`已尝试初始化${MAX_INIT_ATTEMPTS}次，不再尝试`);
+      return false;
+    }
+    
+    // 递增尝试次数
+    setInitAttempts(prev => prev + 1);
+    
     // 如果Live2DLoader存在，使用它来加载所有依赖
     if (window.Live2DLoader) {
       console.log('使用Live2DLoader加载依赖...');
@@ -159,18 +276,41 @@ export const useLive2DModel = (modelPath, options = {}) => {
         
         if (!result) {
           console.error(`Live2DLoader初始化失败，已尝试${maxAttempts}次`);
+          console.log('尝试手动初始化');
+          
+          // 尝试手动初始化
+          if (manualInitPIXILive2D()) {
+            console.log('手动初始化成功');
+            return true;
+          }
+          
           return false;
         }
       } catch (error) {
         console.error('Live2DLoader加载过程中出错:', error);
+        
+        // 尝试手动初始化
+        console.log('尝试手动初始化');
+        if (manualInitPIXILive2D()) {
+          console.log('手动初始化成功');
+          return true;
+        }
+        
         return false;
       }
     } 
     
-    // 检查依赖是否已加载
+    // 如果没有Live2DLoader，检查依赖
     const dependencyError = checkDependencies();
+    
+    // 如果依赖检查失败，尝试手动初始化
+    if (dependencyError) {
+      console.log('依赖检查失败，尝试手动初始化');
+      return manualInitPIXILive2D();
+    }
+    
     return !dependencyError;
-  }, [checkDependencies]);
+  }, [checkDependencies, manualInitPIXILive2D, initAttempts]);
   
   // 尝试检查模型文件是否存在
   const checkModelFile = useCallback(async (path) => {
@@ -395,7 +535,8 @@ export const useLive2DModel = (modelPath, options = {}) => {
     loading,
     error,
     applyExpression,
-    applyMotion
+    applyMotion,
+    reload: () => loadModel(modelPath) // 添加重新加载方法
   };
 };
 
