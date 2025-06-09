@@ -7,9 +7,9 @@
 // 默认模型ID
 const DEFAULT_MODEL = 'OpenAssistant/oasst-sft-1-pythia-12b';
 
-// Cloudflare Worker URL
+// Cloudflare Worker URL - 不再使用/api路径
 const USE_MOCK_API = false;
-const WORKER_URL = 'https://broad-surf-db28.3485573766.workers.dev/api';
+const WORKER_URL = 'https://broad-surf-db28.3485573766.workers.dev';
 
 /**
  * 检查是否已配置API服务
@@ -76,7 +76,7 @@ export const sendMessageToHuggingFace = async (message, username, chatHistory = 
 
     // 在请求前先验证Worker是否可访问
     try {
-      const statusCheck = await fetch(WORKER_URL.replace('/api', ''), {
+      const statusCheck = await fetch(WORKER_URL, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -95,6 +95,7 @@ export const sendMessageToHuggingFace = async (message, username, chatHistory = 
 
     try {
       // 首先尝试使用默认模式
+      console.log('正在向Worker发送请求:', WORKER_URL);
       const response = await fetch(WORKER_URL, {
         method: 'POST',
         headers: {
