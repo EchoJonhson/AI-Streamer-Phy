@@ -1,37 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <link rel="icon" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="虚拟AI主播" />
+  <link rel="apple-touch-icon" href="/logo192.png" />
+  <link rel="manifest" href="/manifest.json" />
   <title>虚拟AI主播</title>
   
-  <!-- Polyfill for older browsers -->
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver%2CResizeObserver"></script>
-  
-  <!-- 预加载Live2D核心库 - 使用defer确保按顺序加载 -->
-  <script src="/live2d/core/live2dcubismcore.min.js" defer></script>
-  <script src="/live2d/core/live2d.min.js" defer></script>
-  
-  <!-- 调试状态检查 -->
+  <!-- 兼容性补丁 -->
   <script>
-    window.addEventListener('DOMContentLoaded', function() {
-      console.log('Live2D核心库状态检查:');
-      console.log('Live2DCubismCore:', window.Live2DCubismCore ? '已加载' : '未加载');
-      console.log('Live2D:', window.Live2D ? '已加载' : '未加载');
+    // 应用polyfills
+    function applyPolyfills() {
+      if (!HTMLCanvasElement.prototype.getContext) {
+        HTMLCanvasElement.prototype.getContext = function() {
+          return null;
+        };
+      }
       
-      // 如果核心库未加载，尝试手动加载
-      if (!window.Live2DCubismCore) {
-        console.log('尝试手动加载Live2DCubismCore...');
+      if (!HTMLCanvasElement.prototype.getContextAttributes) {
+        HTMLCanvasElement.prototype.getContextAttributes = function() {
+          return { alpha: true, antialias: true, depth: true, failIfMajorPerformanceCaveat: false, 
+                  powerPreference: "default", premultipliedAlpha: true, preserveDrawingBuffer: false, 
+                  stencil: false, desynchronized: false, xrCompatible: false };
+        };
+        console.log('已应用getContextAttributes polyfill');
+      }
+    }
+
+    // 立即应用补丁
+    applyPolyfills();
+    
+    // 在控制台中显示Live2D库加载状态
+    const LIVE2D_STATUS = {
+      pixi: false,
+      cubism4: false,
+      cubism2: false,
+      pixiLive2d: false
+    };
+
+    // 检查并报告库加载状态
+    function checkLibraryStatus() {
+      console.log('Cubism 4运行时状态:', LIVE2D_STATUS.cubism4 ? '已加载' : '未加载');
+      console.log('Cubism 2运行时状态:', LIVE2D_STATUS.cubism2 ? '已加载' : '未加载');
+      console.log('PIXI.js状态:', LIVE2D_STATUS.pixi ? '已加载' : '未加载');
+      console.log('PIXI-Live2D-Display状态:', LIVE2D_STATUS.pixiLive2d ? '已加载' : '未加载');
+    }
+  </script>
+  
+  <!-- 首先加载PIXI.js -->
+  <script src="/libs/pixi.min.js"></script>
+  
+  <!-- 然后预加载Live2D核心库 -->
+  <script src="/live2d/core/live2d-preload.js"></script>
+  
+  <!-- 为了兼容性，也直接引入核心库 -->
+  <script>
+    // 检测是否已加载，如果尚未加载，在这里加载
+    window.addEventListener('load', function() {
+      // 更新状态
+      LIVE2D_STATUS.pixi = !!window.PIXI;
+      LIVE2D_STATUS.cubism4 = !!window.Live2DCubismCore;
+      LIVE2D_STATUS.cubism2 = !!window.Live2D;
+      LIVE2D_STATUS.pixiLive2d = window.PIXI && !!window.PIXI.live2d;
+      
+      checkLibraryStatus();
+      
+      // 如果核心库未加载，尝试直接加载
+      if (!LIVE2D_STATUS.cubism2) {
+        const script = document.createElement('script');
+        script.src = '/live2d/core/live2d.min.js';
+        document.head.appendChild(script);
+      }
+      
+      if (!LIVE2D_STATUS.cubism4) {
         const script = document.createElement('script');
         script.src = '/live2d/core/live2dcubismcore.min.js';
+        document.head.appendChild(script);
+      }
+      
+      // 如果PIXI已加载但PIXI-Live2D-Display未加载，尝试使用本地替代版本
+      if (LIVE2D_STATUS.pixi && !LIVE2D_STATUS.pixiLive2d) {
+        console.log('尝试使用本地PIXI-Live2D-Display库...');
+        
+        // 优先使用public/libs中的版本
+        const script = document.createElement('script');
+        script.src = '/libs/pixi-live2d-display.min.js';
+        script.onload = function() {
+          console.log('libs目录下的PIXI-Live2D-Display库已加载');
+          LIVE2D_STATUS.pixiLive2d = true;
+          checkLibraryStatus();
+        };
+        script.onerror = function() {
+          console.error('libs目录下的PIXI-Live2D-Display库加载失败，尝试加载替代版本');
+          
+          // 加载替代版本
+          const backupScript = document.createElement('script');
+          backupScript.src = '/live2d/core/index-live2d.js';
+          backupScript.onload = function() {
+            console.log('本地PIXI-Live2D-Display库替代版本已加载');
+            LIVE2D_STATUS.pixiLive2d = true;
+            checkLibraryStatus();
+          };
+          document.head.appendChild(backupScript);
+        };
         document.head.appendChild(script);
       }
     });
   </script>
 </head>
 <body>
+  <noscript>您需要启用JavaScript才能运行此应用。</noscript>
   <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
 </body>
 </html> 

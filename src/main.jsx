@@ -1,7 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createHashRouter, RouterProvider } from 'react-router-dom'
-import * as PIXI from 'pixi.js'
 import './index.css'
 import App from './App.jsx'
 import HomePage from './pages/HomePage'
@@ -10,8 +9,7 @@ import SettingsPage from './pages/SettingsPage'
 import LibraryHelp from './pages/LibraryHelp'
 import MainLayout from './components/layout/MainLayout'
 
-// 将PIXI暴露给window，以便pixi-live2d-display能够自动更新Live2D模型
-window.PIXI = PIXI;
+// PIXI.js已在HTML中通过CDN加载
 
 // 创建路由配置
 const router = createHashRouter([

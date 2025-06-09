@@ -1,15 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, './src'),
     },
   },
+  base: './', // 确保使用相对路径
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -27,18 +28,20 @@ export default defineConfig({
       },
       // 处理外部脚本
       external: [
+        // 排除在构建之外的外部依赖
+        '/live2d/core/live2d.min.js',
         '/live2d/core/live2dcubismcore.min.js',
-        '/live2d-preload.js'
+        '/live2d/core/index-live2d.js',
+        '/live2d/core/live2d-preload.js',
       ]
     },
     // 复制live2d核心库到输出目录
     copyPublicDir: true,
   },
   server: {
-    port: 5173,
+    port: 3000,
     strictPort: false,
     open: true,
   },
-  base: '/',
   publicDir: 'public',
 })

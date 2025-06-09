@@ -26,10 +26,9 @@ const Live2DModel = ({
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
-  const initAttemptRef = useRef(0);
 
   // 使用自定义钩子加载模型
-  const { model, loading, error, fixModelPosition } = useLive2DModel(modelPath, { width, height });
+  const { model, loading, error } = useLive2DModel(modelPath, { width, height });
   
   // 检查库是否已加载
   const checkLibrariesLoaded = () => {
@@ -52,57 +51,32 @@ const Live2DModel = ({
   useEffect(() => {
     if (!containerRef.current || isInitialized) return;
 
-    // 最多尝试初始化3次
-    if (initAttemptRef.current >= 3) {
-      console.error('初始化PIXI应用失败: 超过最大尝试次数');
-      onError('初始化PIXI应用失败: 超过最大尝试次数');
-      return;
-    }
-    
-    // 检查库是否已加载
-    if (!checkLibrariesLoaded()) {
-      // 如果库未加载，延迟重试
-      const retryDelay = 1000; // 1秒后重试
-      console.log(`库尚未完全加载，${retryDelay}ms后重试...`);
-      
-      initAttemptRef.current += 1;
-      setTimeout(() => {
-        // 强制重新渲染
-        setIsInitialized(false);
-      }, retryDelay);
-      
-      return;
-    }
-
     try {
+      // 检查必要的库是否已加载
+      if (!window.PIXI || !window.PIXI.Application) {
+        console.error('PIXI.js未加载');
+        onError('PIXI.js未加载');
+        return;
+      }
+
       // 创建PIXI应用
       const app = new window.PIXI.Application({
         width,
         height,
         transparent: true,
         autoStart: true,
-        autoDensity: true,
         antialias: true,
       });
 
       // 将PIXI应用添加到DOM
       containerRef.current.appendChild(app.view);
       appRef.current = app;
-      
-      // 设置全局变量以方便调试
-      window.pixiApp = app;
 
       setIsInitialized(true);
       console.log('PIXI应用已初始化');
     } catch (err) {
       console.error('初始化PIXI应用失败:', err);
       onError(`初始化PIXI应用失败: ${err.message}`);
-      
-      // 重试
-      initAttemptRef.current += 1;
-      setTimeout(() => {
-        setIsInitialized(false);
-      }, 1000);
     }
   }, [width, height, isInitialized, onError]);
 
@@ -151,16 +125,11 @@ const Live2DModel = ({
 
       // 调用加载完成回调
       onLoad(model);
-      
-      // 修复模型位置
-      setTimeout(() => {
-        fixModelPosition();
-      }, 100);
     } catch (err) {
       console.error('添加模型到场景失败:', err);
       onError(`添加模型到场景失败: ${err.message}`);
     }
-  }, [model, isInitialized, onLoad, onError, fixModelPosition]);
+  }, [model, isInitialized, onLoad, onError]);
 
   // 清理函数
   useEffect(() => {

@@ -72,7 +72,7 @@
     </script>
     
     <!-- PIXI.js库 -->
-    <script src="https://cdn.jsdelivr.net/npm/pixi.js@5.3.3/dist/pixi.min.js"></script>
+    <script src="https://pixijs.download/v6.5.0/pixi.min.js"></script>
     
     <!-- Live2D Cubism 2 运行时 -->
     <script src="./libs/live2d.min.js"></script>
@@ -81,7 +81,7 @@
     <script src="./live2d/core/live2dcubismcore.min.js"></script>
     
     <!-- 本地版本的PIXI-Live2D-Display库 -->
-    <script src="./index-live2d.js"></script>
+    <script src="./libs/pixi-live2d-display.min.js"></script>
     
     <!-- 备用CDN加载 -->
     <script>
@@ -126,11 +126,11 @@
             document.head.appendChild(script);
           }
           
-          // 如果PIXI-Live2D-Display未加载，尝试本地版本
+          // 如果PIXI-Live2D-Display未加载，尝试从本地加载
           if (!window.PIXI || !window.PIXI.live2d) {
             console.warn('尝试使用本地PIXI-Live2D-Display库...');
             var script = document.createElement('script');
-            script.src = './index-live2d.js';
+            script.src = './libs/pixi-live2d-display.min.js';
             document.head.appendChild(script);
           }
         }, 1000); // 延迟检查，确保有足够时间加载

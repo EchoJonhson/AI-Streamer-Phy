@@ -48,9 +48,15 @@ export const useLive2DModel = (modelPath, options = {}) => {
         fill: 0xFFFFFF,
         align: 'center'
       });
-      text.anchor.set(0.5);
-      text.position.set((options.width || 300) / 2, (options.height || 500) / 2);
+      text.x = (options.width || 300) / 2 - text.width / 2;
+      text.y = (options.height || 500) / 2 - text.height / 2;
       model.addChild(text);
+      
+      // 添加自定义锚点属性 - 不使用set方法，直接设置属性
+      model.anchor = {
+        x: 0.5,
+        y: 0.5
+      };
       
       // 模拟internalModel
       model.internalModel = {
@@ -81,6 +87,10 @@ export const useLive2DModel = (modelPath, options = {}) => {
           return Promise.resolve();
         }
       };
+      
+      // 设置初始位置
+      model.position.x = (options.width || 300) / 2;
+      model.position.y = (options.height || 500) / 2;
       
       return model;
     } catch (error) {
@@ -144,22 +154,50 @@ export const useLive2DModel = (modelPath, options = {}) => {
     }
   }, [checkDependencies, useSimpleModelLoader]);
 
-  // 修复模型位置
+  // 修复模型位置 - 添加更严格的检查以避免anchor.set错误
   const fixModelPosition = useCallback(() => {
     if (!model || positionFixed) return;
     
     try {
+      console.log('尝试修复模型位置');
+      
       // 调整模型位置和尺寸
       const width = options.width || 300;
       const height = options.height || 500;
       
-      // 计算合适的缩放比例
-      const scale = Math.min(width / model.width, height / model.height) * 0.9;
-      
       // 设置模型位置
-      model.scale.set(scale, scale);
-      model.position.set(width / 2, height * 0.7); // 将模型放在较低的位置
-      model.anchor.set(0.5, 0.5);
+      if (model.position) {
+        model.position.x = width / 2;
+        model.position.y = height * 0.7; // 将模型放在较低的位置
+      }
+      
+      // 设置模型缩放
+      if (model.scale) {
+        const scale = 0.9; // 使用固定缩放比例
+        model.scale.x = scale;
+        model.scale.y = scale;
+      }
+      
+      // 安全地设置锚点 - 避免使用set方法，直接设置属性
+      if (model.anchor) {
+        // 检查anchor是否有set方法，如果有，则安全地调用
+        if (typeof model.anchor.set === 'function') {
+          try {
+            model.anchor.set(0.5, 0.5);
+          } catch (err) {
+            console.warn('设置anchor.set失败，尝试直接设置属性:', err);
+            model.anchor.x = 0.5;
+            model.anchor.y = 0.5;
+          }
+        } else {
+          // 如果没有set方法，直接设置属性
+          model.anchor.x = 0.5;
+          model.anchor.y = 0.5;
+        }
+      } else if (typeof model.anchor === 'undefined') {
+        // 如果anchor不存在，创建一个新的对象
+        model.anchor = { x: 0.5, y: 0.5 };
+      }
       
       // 启用鼠标跟踪
       if (model.internalModel) {
@@ -170,6 +208,8 @@ export const useLive2DModel = (modelPath, options = {}) => {
       console.log('模型位置已修复');
     } catch (error) {
       console.error('修复模型位置失败:', error);
+      // 即使失败，也标记为已修复，避免重复尝试
+      setPositionFixed(true);
     }
   }, [model, positionFixed, options.width, options.height]);
 
@@ -216,23 +256,24 @@ export const useLive2DModel = (modelPath, options = {}) => {
       }
     }, 100);
     
-    // 10秒后清除定时器，防止无限检查
-    setTimeout(() => clearInterval(checkInterval), 10000);
+    // 3秒后清除定时器，防止无限检查
+    setTimeout(() => clearInterval(checkInterval), 3000);
   }, [model, fixModelPosition]);
 
   // 监听模型变化
   useEffect(() => {
     if (model) {
+      // 直接尝试修复位置，不需要等待internalModel
+      fixModelPosition();
       checkModelReady();
     }
-  }, [model, checkModelReady]);
+  }, [model, checkModelReady, fixModelPosition]);
 
   // 监听模型路径变化
   useEffect(() => {
     if (!modelPath) return;
     
     loadModel(modelPath);
-    setPositionFixed(false);
   }, [modelPath, loadModel]);
 
   return {
@@ -240,8 +281,7 @@ export const useLive2DModel = (modelPath, options = {}) => {
     loading,
     error,
     applyExpression,
-    applyMotion,
-    fixModelPosition
+    applyMotion
   };
 };
 
