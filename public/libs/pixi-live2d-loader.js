@@ -23,8 +23,11 @@
     // 检查Live2D (Cubism 2)
     window.live2dLibraryStatus.Live2D = !!window.Live2D;
     
-    // 检查PIXI-Live2D-Display
-    window.live2dLibraryStatus.PIXILive2D = !!(window.PIXI && window.PIXI.live2d);
+    // 检查PIXI-Live2D-Display - 添加更详细的检查
+    window.live2dLibraryStatus.PIXILive2D = !!(window.PIXI && 
+                                              window.PIXI.live2d && 
+                                              window.PIXI.live2d.Live2DModel && 
+                                              typeof window.PIXI.live2d.Live2DModel.from === 'function');
     
     console.log('[Live2D Loader] 库加载状态:', window.live2dLibraryStatus);
     
@@ -34,11 +37,35 @@
            window.live2dLibraryStatus.PIXILive2D;
   }
 
+  // 验证PIXI-Live2D-Display是否完全初始化
+  function validatePIXILive2D() {
+    try {
+      if (!window.PIXI || !window.PIXI.live2d) {
+        return false;
+      }
+      
+      // 检查关键对象和方法是否存在
+      if (!window.PIXI.live2d.Live2DModel ||
+          !window.PIXI.live2d.Live2DModel.from ||
+          !window.PIXI.live2d.config) {
+        return false;
+      }
+      
+      // 尝试访问配置选项
+      window.PIXI.live2d.config.motionFadingDuration = 500;
+      
+      return true;
+    } catch (error) {
+      console.error('[Live2D Loader] 验证PIXI-Live2D-Display时出错:', error);
+      return false;
+    }
+  }
+
   // 加载PIXI-Live2D-Display库
   function loadPIXILive2DDisplay() {
     return new Promise((resolve, reject) => {
-      if (window.PIXI && window.PIXI.live2d) {
-        console.log('[Live2D Loader] PIXI-Live2D-Display已加载');
+      if (window.PIXI && window.PIXI.live2d && validatePIXILive2D()) {
+        console.log('[Live2D Loader] PIXI-Live2D-Display已加载并正确初始化');
         resolve(true);
         return;
       }
@@ -63,7 +90,7 @@
         
         // 延迟检查，确保库正确初始化
         setTimeout(() => {
-          if (window.PIXI && window.PIXI.live2d) {
+          if (validatePIXILive2D()) {
             console.log('[Live2D Loader] PIXI-Live2D-Display库初始化成功');
             
             // 配置PIXI.live2d
@@ -79,7 +106,7 @@
             console.error('[Live2D Loader] PIXI-Live2D-Display库加载成功但初始化失败');
             reject(new Error('PIXI-Live2D-Display初始化失败'));
           }
-        }, 200);
+        }, 500); // 增加延迟时间
       };
       
       // 设置错误事件
@@ -98,9 +125,15 @@
     return new Promise((resolve, reject) => {
       console.log('[Live2D Loader] 尝试从CDN加载PIXI-Live2D-Display库');
       
+      // 尝试多个CDN源
+      const cdnUrls = [
+        'https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js',
+        'https://unpkg.com/pixi-live2d-display@0.4.0/dist/index.min.js'
+      ];
+      
       // 创建脚本元素
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/index.min.js';
+      script.src = cdnUrls[0]; // 首先尝试jsdelivr
       script.async = true;
       
       // 设置加载事件
@@ -109,7 +142,7 @@
         
         // 延迟检查，确保库正确初始化
         setTimeout(() => {
-          if (window.PIXI && window.PIXI.live2d) {
+          if (validatePIXILive2D()) {
             console.log('[Live2D Loader] CDN PIXI-Live2D-Display库初始化成功');
             
             // 配置PIXI.live2d
@@ -123,15 +156,67 @@
             resolve(true);
           } else {
             console.error('[Live2D Loader] CDN PIXI-Live2D-Display库加载成功但初始化失败');
-            reject(new Error('CDN PIXI-Live2D-Display初始化失败'));
+            
+            // 如果第一个CDN失败，尝试第二个
+            if (script.src === cdnUrls[0] && cdnUrls.length > 1) {
+              console.log('[Live2D Loader] 尝试备用CDN源');
+              const backupScript = document.createElement('script');
+              backupScript.src = cdnUrls[1];
+              backupScript.async = true;
+              
+              backupScript.onload = function() {
+                setTimeout(() => {
+                  if (validatePIXILive2D()) {
+                    console.log('[Live2D Loader] 备用CDN PIXI-Live2D-Display库初始化成功');
+                    resolve(true);
+                  } else {
+                    reject(new Error('CDN PIXI-Live2D-Display初始化失败'));
+                  }
+                }, 500);
+              };
+              
+              backupScript.onerror = function() {
+                reject(new Error('备用CDN PIXI-Live2D-Display加载失败'));
+              };
+              
+              document.head.appendChild(backupScript);
+            } else {
+              reject(new Error('CDN PIXI-Live2D-Display初始化失败'));
+            }
           }
-        }, 200);
+        }, 500); // 增加延迟时间
       };
       
       // 设置错误事件
       script.onerror = function() {
         console.error('[Live2D Loader] CDN PIXI-Live2D-Display库加载失败');
-        reject(new Error('CDN PIXI-Live2D-Display加载失败'));
+        
+        // 尝试备用CDN
+        if (cdnUrls.length > 1) {
+          console.log('[Live2D Loader] 尝试备用CDN源');
+          const backupScript = document.createElement('script');
+          backupScript.src = cdnUrls[1];
+          backupScript.async = true;
+          
+          backupScript.onload = function() {
+            setTimeout(() => {
+              if (validatePIXILive2D()) {
+                console.log('[Live2D Loader] 备用CDN PIXI-Live2D-Display库初始化成功');
+                resolve(true);
+              } else {
+                reject(new Error('备用CDN PIXI-Live2D-Display初始化失败'));
+              }
+            }, 500);
+          };
+          
+          backupScript.onerror = function() {
+            reject(new Error('备用CDN PIXI-Live2D-Display加载失败'));
+          };
+          
+          document.head.appendChild(backupScript);
+        } else {
+          reject(new Error('CDN PIXI-Live2D-Display加载失败'));
+        }
       };
       
       // 添加到文档
@@ -178,6 +263,7 @@
     checkLibraries,
     loadPIXILive2DDisplay,
     loadPIXILive2DDisplayFromCDN,
-    initLive2D
+    initLive2D,
+    validatePIXILive2D
   };
 })(); 

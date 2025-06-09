@@ -25,7 +25,7 @@ const DEFAULT_CONFIG = {
   
   // 模型相关配置
   model: {
-    path: '/live2d/models/wuwuwu/wuwuwu.model3.json',
+    path: './live2d/models/wuwuwu/wuwuwu.model3.json',
     width: 800,
     height: 800,
     enableExpression: true,

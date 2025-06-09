@@ -116,6 +116,14 @@ export const useLive2DModel = (modelPath, options = {}) => {
       return 'Live2DCubismCore未加载，请访问 #/library-help 页面获取帮助';
     }
     
+    // 更详细地检查PIXI-Live2D-Display是否完全初始化
+    if (!window.PIXI.live2d.Live2DModel || 
+        !window.PIXI.live2d.Live2DModel.from || 
+        !window.PIXI.live2d.config) {
+      console.error('PIXI-Live2D-Display未完全初始化');
+      return 'PIXI-Live2D-Display未完全初始化，请刷新页面重试';
+    }
+    
     // 一切正常
     return null;
   }, []);
@@ -126,12 +134,31 @@ export const useLive2DModel = (modelPath, options = {}) => {
     if (window.Live2DLoader) {
       console.log('使用Live2DLoader加载依赖...');
       try {
-        const result = await window.Live2DLoader.initLive2D();
-        if (result) {
-          console.log('Live2DLoader初始化成功');
-          return true;
-        } else {
-          console.error('Live2DLoader初始化失败');
+        // 尝试多次初始化，最多3次
+        let attempts = 0;
+        const maxAttempts = 3;
+        let result = false;
+        
+        while (!result && attempts < maxAttempts) {
+          attempts++;
+          console.log(`尝试初始化Live2D依赖 (尝试 ${attempts}/${maxAttempts})`);
+          
+          // 等待初始化完成
+          result = await window.Live2DLoader.initLive2D();
+          
+          if (result) {
+            console.log('Live2DLoader初始化成功');
+            return true;
+          }
+          
+          if (attempts < maxAttempts) {
+            // 如果失败但还有尝试机会，等待一段时间再试
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        
+        if (!result) {
+          console.error(`Live2DLoader初始化失败，已尝试${maxAttempts}次`);
           return false;
         }
       } catch (error) {
@@ -198,8 +225,14 @@ export const useLive2DModel = (modelPath, options = {}) => {
             ...options.loadOptions
           };
           
-          // 加载模型
-          const modelObj = await window.PIXI.live2d.Live2DModel.from(path, loadOptions);
+          // 加载模型 - 添加超时保护
+          const loadModelPromise = window.PIXI.live2d.Live2DModel.from(path, loadOptions);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('加载模型超时')), 30000)
+          );
+          
+          // 使用Promise.race来实现超时控制
+          const modelObj = await Promise.race([loadModelPromise, timeoutPromise]);
           
           if (modelObj) {
             // 设置模型尺寸和位置
