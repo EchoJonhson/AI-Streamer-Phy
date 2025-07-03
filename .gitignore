@@ -76,6 +76,15 @@ venv.bak/
 *.swo
 *~
 
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
 # Logs
 *.log
 logs/
@@ -87,16 +96,18 @@ app.log
 *.sqlite3
 chat_history.db
 
-# Audio files (large files)
+# Audio files (too large for GitHub)
 *.wav
 *.mp3
 *.flac
 *.m4a
 *.aac
-output_test.wav
-system_test_output.wav
+audio_files/
+voice_data/
+temp/
+trained_models/
 
-# Model files (very large)
+# Model files (too large for GitHub)
 *.ckpt
 *.pth
 *.safetensors
@@ -105,40 +116,7 @@ system_test_output.wav
 *.moc3
 *.model3.json
 *.cdi3.json
-
-# Temporary files
-temp/
-tmp/
-*.tmp
-*.temp
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Large binary files
-*.dll
-*.exe
-*.dylib
-*.so
+*.physics.json
 
 # FFmpeg files (too large for GitHub)
 ffmpeg.exe
@@ -151,21 +129,57 @@ swresample-6.dll
 swscale-9.dll
 avfilter-11.dll
 avdevice-62.dll
+ffmpeg-master-latest-win64-gpl-shared/
 
-# Audio files directory
-audio_files/
-voice_data/
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Test files
-test_*.py
-*_test.py
+# Build outputs
+dist/
+build/
+*.tgz
+*.tar.gz
 
-# Documentation files (keep only main ones)
-*.md
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Test outputs
+test_*.wav
+output_*.wav
+system_test_output.wav
+output_test.wav
+
+# Documentation that might be too large
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+
+# Keep only essential files
 !README.md
 !LICENSE
-!QUICK_START.md
-!TECHNICAL_DOCUMENTATION.md
-
-# Exclude GPT-SoVITS submodule
-GPT-SoVITS/
+!requirements.txt
+!config.yaml
+!run.py
+!src/
+!public/
+!GPT-SoVITS/
+!GPT_SoVITS/
+!config_templates/
+!prompts/
+!characters/

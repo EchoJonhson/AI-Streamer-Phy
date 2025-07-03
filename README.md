@@ -1,6 +1,6 @@
-# AI心理医生 - 虚拟数字人心理疏导师
+# AI心理医生 - 虚拟数字人心理疏导师小雨
 
-一个基于GPT-SoVITS和Live2D技术的AI心理医生系统，提供专业的心理咨询服务。
+基于GPT-SoVITS和Live2D技术的AI心理医生系统，提供专业的心理咨询服务。
 
 ## 🌟 项目特色
 
@@ -18,7 +18,7 @@
 - Python 3.8+
 - Windows 10/11
 - 8GB+ RAM
-- 显卡支持（推荐）
+- 显卡支持CUDA（推荐）
 
 ### 安装步骤
 
@@ -50,123 +50,170 @@ llm:
 python run.py
 ```
 
-6. **访问系统**
+6. **访问界面**
 打开浏览器访问：http://localhost:8001
 
 ## 📁 项目结构
 
 ```
 AI-Streamer-Phy/
-├── src/open_llm_vtuber/     # 核心后端代码
-├── public/                  # 前端静态文件
-├── GPT-SoVITS/             # GPT-SoVITS语音合成
-├── config.yaml             # 配置文件
-├── run.py                  # 主启动文件
-└── README.md              # 项目说明
+├── src/                    # 源代码
+│   └── open_llm_vtuber/   # 核心功能模块
+├── public/                 # 前端界面
+├── GPT-SoVITS/            # GPT-SoVITS语音合成
+├── config.yaml            # 配置文件
+├── run.py                 # 启动脚本
+└── requirements.txt       # 依赖列表
 ```
+
+## 🎯 核心功能
+
+### 1. 智能对话系统
+- 基于Qwen大模型的智能对话
+- 专业的心理医生人设
+- 严格禁止使用emoji和颜文字
+- 保持专业、温暖、理解的沟通风格
+
+### 2. 高质量语音合成
+- 基于GPT-SoVITS的本地语音合成
+- 支持预训练模型和自定义训练
+- 训练完成后自动播放音频
+- 多种语音模式切换
+
+### 3. Live2D虚拟形象
+- 可爱的虚拟形象小雨
+- 实时表情变化
+- 支持模型缩放和位置调整
+- 响应式交互
+
+### 4. 语音交互
+- 支持语音输入识别
+- 实时语音合成输出
+- 多种语音模式选择
+- 语音参数调节
 
 ## ⚙️ 配置说明
 
 ### 主要配置项
 
-- **角色配置**：AI心理医生小雨的人设和性格
-- **语音合成**：SoVITS模型路径和参数
-- **大语言模型**：Qwen API配置
-- **Live2D模型**：虚拟形象配置
+```yaml
+# 角色配置
+character:
+  name: "小雨"
+  title: "AI心理医生"
+  personality: "专业、温暖、理解、严谨的心理医生"
 
-### 人设特点
+# 大语言模型配置
+llm:
+  provider: qwen
+  api_key: "your-api-key"
+  model: qwen-turbo
 
-- 专业、温暖、理解的心理医生
-- 擅长认知行为疗法和积极心理学
-- 严格禁止使用emoji和颜文字
-- 保持专业客观的咨询态度
+# 语音合成配置
+tts:
+  provider: sovits
+  max_length: 200
+```
 
-## 🎯 功能特性
+### 语音模式
 
-### 1. 智能对话
-- 基于Qwen大模型的自然语言理解
-- 专业的心理咨询回复
-- 50字以内的简洁回答
+1. **预训练SoVITS模式**：使用预训练的Arona语音模型
+2. **浏览器TTS模式**：使用系统默认语音
+3. **自定义训练模式**：使用用户训练的语音模型
 
-### 2. 语音合成
-- 本地GPT-SoVITS语音合成
-- 高质量、自然的语音输出
-- 支持自定义语音训练
+## 🎮 使用指南
 
-### 3. 语音识别
-- 实时语音输入识别
-- 支持中文语音识别
-- 自动转换为文字
-
-### 4. 虚拟形象
-- Live2D虚拟形象
-- 表情和动作同步
-- 可自定义外观
-
-### 5. 训练功能
-- 自定义语音模型训练
-- 训练完成后自动播放
-- 支持多种训练模式
-
-## 🔧 使用指南
-
-### 基本使用
+### 基本操作
 
 1. **启动系统**：运行 `python run.py`
-2. **选择语音模式**：在界面中选择合适的语音模式
-3. **开始对话**：通过文字或语音与AI心理医生交流
-4. **测试语音**：点击测试按钮验证语音效果
+2. **访问界面**：打开浏览器访问 http://localhost:8001
+3. **开始对话**：在聊天框中输入消息或使用语音输入
+4. **测试语音**：点击测试按钮听语音效果
+5. **切换模式**：在侧边栏选择不同的语音模式
 
 ### 语音训练
 
-1. **准备音频**：准备高质量的语音样本
-2. **开始训练**：点击"开始训练"按钮
-3. **等待完成**：训练完成后会自动播放效果
-4. **切换模式**：使用训练好的模型进行语音合成
+1. **准备音频**：将训练音频放入 `audio_files/` 目录
+2. **开始训练**：在侧边栏点击"开始训练"
+3. **等待完成**：训练完成后会自动播放训练音频
+4. **切换模式**：切换到"自定义训练模型"模式使用
 
-### 配置调整
+### 模型配置
 
-- **修改人设**：编辑 `config.yaml` 中的角色配置
-- **调整语音参数**：修改SoVITS相关配置
-- **更换模型**：替换预训练模型文件
+1. **调整参数**：在侧边栏调整语音参数
+2. **模型缩放**：调整Live2D模型大小
+3. **位置调整**：调整模型在界面中的位置
+4. **背景设置**：设置自定义背景图片
 
-## 📚 技术文档
+## 🔧 技术架构
 
-- [技术文档](TECHNICAL_DOCUMENTATION.md) - 详细的技术实现说明
-- [快速开始指南](QUICK_START.md) - 快速部署指南
-- [语音克隆指南](VOICE_CLONING_GUIDE.md) - 语音训练教程
-- [SoVITS集成指南](SOVITS_INTEGRATION_GUIDE.md) - SoVITS配置说明
+### 后端技术栈
+- **Python 3.8+**：主要开发语言
+- **aiohttp**：异步Web框架
+- **WebSocket**：实时通信
+- **GPT-SoVITS**：语音合成引擎
+- **Qwen API**：大语言模型
+
+### 前端技术栈
+- **HTML5/CSS3/JavaScript**：基础前端技术
+- **Live2D**：虚拟形象渲染
+- **PIXI.js**：图形渲染引擎
+- **WebSocket**：实时通信
+
+### 核心模块
+- **LLM管理器**：大语言模型接口
+- **TTS管理器**：语音合成管理
+- **ASR管理器**：语音识别管理
+- **Live2D管理器**：虚拟形象管理
+
+## 📝 开发说明
+
+### 添加新功能
+
+1. **后端功能**：在 `src/open_llm_vtuber/` 中添加新模块
+2. **前端功能**：在 `public/` 中修改HTML/JS文件
+3. **配置更新**：在 `config.yaml` 中添加新配置项
+
+### 调试模式
+
+设置 `config.yaml` 中的 `debug: true` 启用调试模式：
+```yaml
+app:
+  debug: true
+```
+
+### 日志查看
+
+系统运行时会生成 `app.log` 日志文件，包含详细的运行信息。
 
 ## 🤝 贡献指南
 
-欢迎提交Issue和Pull Request来改进项目！
-
-### 开发环境设置
-
-1. Fork项目
-2. 创建功能分支
-3. 提交更改
-4. 创建Pull Request
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开 Pull Request
 
 ## 📄 许可证
 
-本项目采用MIT许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
 ## 🙏 致谢
 
-- [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) - 语音合成技术
+- [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) - 语音合成引擎
 - [Live2D](https://www.live2d.com/) - 虚拟形象技术
 - [Qwen](https://github.com/QwenLM/Qwen) - 大语言模型
+- [aiohttp](https://github.com/aio-libs/aiohttp) - 异步Web框架
 
 ## 📞 联系方式
 
 如有问题或建议，请通过以下方式联系：
 
-- GitHub Issues: [提交Issue](https://github.com/Ar1haraNaN7mI/AI-Streamer-Phy/issues)
-- 项目主页: [AI-Streamer-Phy](https://github.com/Ar1haraNaN7mI/AI-Streamer-Phy)
+- 项目Issues：[GitHub Issues](https://github.com/Ar1haraNaN7mI/AI-Streamer-Phy/issues)
+- 邮箱：请通过GitHub Issues联系
 
 ---
 
-**注意**：本项目仅供学习和研究使用，不构成专业的心理咨询服务。如有心理健康问题，请寻求专业心理咨询师的帮助。
+**注意**：本项目仅供学习和研究使用，请勿用于商业用途。使用前请确保遵守相关法律法规和平台政策。
 
 
