@@ -1,156 +1,172 @@
-# 虚拟AI主播系统
+# AI心理医生 - 虚拟数字人心理疏导师
 
-这是一个基于React、Live2D和AI的虚拟主播系统，可以用于直播、虚拟助手等场景。
+一个基于GPT-SoVITS和Live2D技术的AI心理医生系统，提供专业的心理咨询服务。
 
-## 特性
+## 🌟 项目特色
 
-- 支持Live2D模型显示和动画
-- 集成AI对话功能
-- 语音合成
-- 直播模式
-- 响应式设计
+- **专业心理医生人设**：AI心理医生小雨，具备专业的心理咨询背景
+- **高质量语音合成**：基于GPT-SoVITS的本地语音合成，声音自然专业
+- **Live2D虚拟形象**：可爱的虚拟形象，增强交互体验
+- **实时语音交互**：支持语音输入和语音输出
+- **智能对话系统**：基于Qwen大模型的智能对话
+- **训练完成自动播放**：训练完成后自动播放训练音频
 
-## 快速开始
+## 🚀 快速开始
 
-1. 克隆仓库
+### 环境要求
+
+- Python 3.8+
+- Windows 10/11
+- 8GB+ RAM
+- 显卡支持（推荐）
+
+### 安装步骤
+
+1. **克隆项目**
 ```bash
-git clone https://github.com/yourusername/virtual-ai-streamer.git
-cd virtual-ai-streamer
+git clone https://github.com/Ar1haraNaN7mI/AI-Streamer-Phy.git
+cd AI-Streamer-Phy
 ```
 
-2. 安装依赖
+2. **安装依赖**
 ```bash
-npm install
+pip install -r requirements.txt
 ```
 
-3. 启动开发服务器
+3. **下载预训练模型**
 ```bash
-npm run dev
+python download_pretrained_models.py
 ```
 
-## Cloudflare Worker部署
+4. **配置API密钥**
+编辑 `config.yaml` 文件，设置你的Qwen API密钥：
+```yaml
+llm:
+  api_key: "your-qwen-api-key-here"
+```
 
-为了安全地使用Hugging Face API，本项目使用Cloudflare Worker作为代理。按照以下步骤部署：
-
-1. 安装Wrangler CLI
+5. **启动系统**
 ```bash
-npm install -g wrangler
+python run.py
 ```
 
-2. 登录Cloudflare
-```bash
-wrangler login
-```
+6. **访问系统**
+打开浏览器访问：http://localhost:8001
 
-3. 创建一个新的Worker
-```bash
-wrangler init my-hf-proxy
-```
-
-4. 复制`cloudflare-worker/worker.js`到新创建的Worker项目中
-
-5. 在worker.js中更新您的Hugging Face API密钥
-```js
-const HF_API_KEY = "YOUR_HUGGING_FACE_API_KEY";
-```
-
-6. 更新允许的域名列表
-```js
-const ALLOWED_ORIGINS = [
-  "https://your-domain.com",
-  "http://localhost:3000"
-];
-```
-
-7. 发布Worker
-```bash
-wrangler publish
-```
-
-8. 更新前端项目中的Worker URL
-```js
-// src/services/huggingFaceService.js
-const WORKER_URL = 'https://your-worker-name.your-account.workers.dev';
-```
-
-## 故障排除
-
-### Live2D模型不显示
-
-1. 检查浏览器控制台是否有错误
-2. 确认所有必要的Live2D库文件已加载:
-   - live2d.min.js
-   - live2dcubismcore.min.js
-   - pixi.min.js
-   - pixi-live2d-display.min.js
-
-### CORS错误
-
-如果遇到CORS错误：
-1. 确认Worker已正确部署
-2. 检查Worker URL是否正确
-3. 检查Worker中的ALLOWED_ORIGINS是否包含您的域名
-
-### 语音合成错误
-
-如果语音合成不工作：
-1. 确认浏览器支持Web Speech API
-2. 在语音设置中尝试不同的语音选项
-3. 可能需要用户交互后才能使用语音功能
-
-## API密钥安全
-
-**重要**：永远不要在前端代码中直接包含API密钥。本项目使用Cloudflare Worker来保护API密钥。
-
-## 贡献
-
-欢迎提交Pull Request或提出Issues。
-
-## 许可证
-
-MIT
-
-## 功能特点
-
-- 响应式设计，适配各种设备
-- Live2D模型展示与互动
-- 弹幕系统
-- 霓虹赛博朋克风格UI
-
-## 页面说明
-
-- **首页**: 用户输入昵称并进入直播间
-- **直播间**: 包含Live2D模型展示区和互动区域
-- **设置页**: 调整AI主播和界面设置
-
-## 技术栈
-
-- React
-- Vite
-- React Router
-- PIXI.js
-- pixi-live2d-display
-
-## 部署信息
-
-项目已部署到Vercel，可通过以下链接访问：
-[虚拟AI主播](https://virtual-ai-streamer.vercel.app/)
-
-## 项目结构
+## 📁 项目结构
 
 ```
-virtual-ai-streamer/
-├── public/            # 静态资源
-├── src/
-│   ├── components/    # 组件
-│   │   └── layout/    # 布局组件
-│   ├── pages/         # 页面组件
-│   ├── App.jsx        # 应用入口
-│   └── main.jsx       # 主入口
-└── vercel.json        # Vercel配置
+AI-Streamer-Phy/
+├── src/open_llm_vtuber/     # 核心后端代码
+├── public/                  # 前端静态文件
+├── GPT-SoVITS/             # GPT-SoVITS语音合成
+├── config.yaml             # 配置文件
+├── run.py                  # 主启动文件
+└── README.md              # 项目说明
 ```
 
-## 联系方式
+## ⚙️ 配置说明
 
-邮箱: 3485573766@qq.com
-GitHub: [https://github.com/tsurumiyakwa/virtual-ai-streamer](https://github.com/tsurumiyakwa/virtual-ai-streamer)
+### 主要配置项
+
+- **角色配置**：AI心理医生小雨的人设和性格
+- **语音合成**：SoVITS模型路径和参数
+- **大语言模型**：Qwen API配置
+- **Live2D模型**：虚拟形象配置
+
+### 人设特点
+
+- 专业、温暖、理解的心理医生
+- 擅长认知行为疗法和积极心理学
+- 严格禁止使用emoji和颜文字
+- 保持专业客观的咨询态度
+
+## 🎯 功能特性
+
+### 1. 智能对话
+- 基于Qwen大模型的自然语言理解
+- 专业的心理咨询回复
+- 50字以内的简洁回答
+
+### 2. 语音合成
+- 本地GPT-SoVITS语音合成
+- 高质量、自然的语音输出
+- 支持自定义语音训练
+
+### 3. 语音识别
+- 实时语音输入识别
+- 支持中文语音识别
+- 自动转换为文字
+
+### 4. 虚拟形象
+- Live2D虚拟形象
+- 表情和动作同步
+- 可自定义外观
+
+### 5. 训练功能
+- 自定义语音模型训练
+- 训练完成后自动播放
+- 支持多种训练模式
+
+## 🔧 使用指南
+
+### 基本使用
+
+1. **启动系统**：运行 `python run.py`
+2. **选择语音模式**：在界面中选择合适的语音模式
+3. **开始对话**：通过文字或语音与AI心理医生交流
+4. **测试语音**：点击测试按钮验证语音效果
+
+### 语音训练
+
+1. **准备音频**：准备高质量的语音样本
+2. **开始训练**：点击"开始训练"按钮
+3. **等待完成**：训练完成后会自动播放效果
+4. **切换模式**：使用训练好的模型进行语音合成
+
+### 配置调整
+
+- **修改人设**：编辑 `config.yaml` 中的角色配置
+- **调整语音参数**：修改SoVITS相关配置
+- **更换模型**：替换预训练模型文件
+
+## 📚 技术文档
+
+- [技术文档](TECHNICAL_DOCUMENTATION.md) - 详细的技术实现说明
+- [快速开始指南](QUICK_START.md) - 快速部署指南
+- [语音克隆指南](VOICE_CLONING_GUIDE.md) - 语音训练教程
+- [SoVITS集成指南](SOVITS_INTEGRATION_GUIDE.md) - SoVITS配置说明
+
+## 🤝 贡献指南
+
+欢迎提交Issue和Pull Request来改进项目！
+
+### 开发环境设置
+
+1. Fork项目
+2. 创建功能分支
+3. 提交更改
+4. 创建Pull Request
+
+## 📄 许可证
+
+本项目采用MIT许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+## 🙏 致谢
+
+- [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS) - 语音合成技术
+- [Live2D](https://www.live2d.com/) - 虚拟形象技术
+- [Qwen](https://github.com/QwenLM/Qwen) - 大语言模型
+
+## 📞 联系方式
+
+如有问题或建议，请通过以下方式联系：
+
+- GitHub Issues: [提交Issue](https://github.com/Ar1haraNaN7mI/AI-Streamer-Phy/issues)
+- 项目主页: [AI-Streamer-Phy](https://github.com/Ar1haraNaN7mI/AI-Streamer-Phy)
+
+---
+
+**注意**：本项目仅供学习和研究使用，不构成专业的心理咨询服务。如有心理健康问题，请寻求专业心理咨询师的帮助。
+
+

@@ -38,3 +38,134 @@ yarn-error.log*
 *.swo
 *.sw?
 .vercel
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+app.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+chat_history.db
+
+# Audio files (large files)
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.aac
+output_test.wav
+system_test_output.wav
+
+# Model files (very large)
+*.ckpt
+*.pth
+*.safetensors
+*.bin
+*.model
+*.moc3
+*.model3.json
+*.cdi3.json
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Large binary files
+*.dll
+*.exe
+*.dylib
+*.so
+
+# FFmpeg files (too large for GitHub)
+ffmpeg.exe
+ffprobe.exe
+ffplay.exe
+avcodec-62.dll
+avutil-60.dll
+avformat-62.dll
+swresample-6.dll
+swscale-9.dll
+avfilter-11.dll
+avdevice-62.dll
+
+# Audio files directory
+audio_files/
+voice_data/
+
+# Test files
+test_*.py
+*_test.py
+
+# Documentation files (keep only main ones)
+*.md
+!README.md
+!LICENSE
+!QUICK_START.md
+!TECHNICAL_DOCUMENTATION.md
+
+# Exclude GPT-SoVITS submodule
+GPT-SoVITS/
