@@ -19,7 +19,7 @@ def test_sovits_inference():
     logger.info("🔧 测试SoVITS语音合成...")
     
     # 添加GPT-SoVITS路径
-    sovits_path = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS")
+    sovits_path = Path("/home/gpr/AI-Streamer-Phy/GPT-SoVITS")
     if sovits_path.exists():
         sys.path.insert(0, str(sovits_path))
         sys.path.insert(0, str(sovits_path / 'GPT_SoVITS'))
@@ -28,11 +28,11 @@ def test_sovits_inference():
     from TTS_infer_pack.TTS import TTS_Config, TTS
     
     # 模型路径
-    gpt_model = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/中配数据集制/GPT_weights_v2/ALuoNa_cn-e15.ckpt")
-    sovits_model = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/中配数据集制/SoVITS_weights_v2/ALuoNa_cn_e16_s256.pth")
-    ref_audio = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/arona_attendance_enter_1.wav")
-    bert_path = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS/pretrained_models/chinese-roberta-wwm-ext-large")
-    cnhuhbert_path = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS/pretrained_models/chinese-hubert-base")
+    gpt_model = Path("/home/gpr/AI-Streamer-Phy/audio_files/中配数据集制/GPT_weights_v2/ALuoNa_cn-e15.ckpt")
+    sovits_model = Path("/home/gpr/AI-Streamer-Phy/audio_files/中配数据集制/SoVITS_weights_v2/ALuoNa_cn_e16_s256.pth")
+    ref_audio = Path("/home/gpr/AI-Streamer-Phy/audio_files/arona_attendance_enter_1.wav")
+    bert_path = Path("/home/gpr/AI-Streamer-Phy/GPT-SoVITS/pretrained_models/chinese-roberta-wwm-ext-large")
+    cnhuhbert_path = Path("/home/gpr/AI-Streamer-Phy/GPT-SoVITS/pretrained_models/chinese-hubert-base")
     
     # 创建配置
     custom_config = {

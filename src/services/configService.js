@@ -25,7 +25,7 @@ const DEFAULT_CONFIG = {
   
   // 模型相关配置
   model: {
-    path: './live2d/models/wuwuwu/wuwuwu.model3.json',
+    path: '/home/gpr/AI-Streamer-Phy/public/live2d/models/wuwuwu/wuwuwu.model3.json',
     width: 800,
     height: 800,
     enableExpression: true,
@@ -38,7 +38,7 @@ const DEFAULT_CONFIG = {
   ui: {
     showDebugInfo: false,
     backgroundType: 'image', // 'image' 或 'video'
-    backgroundSrc: './backgrounds/custom-bg.png',
+    backgroundSrc: '/home/gpr/AI-Streamer-Phy/public/backgrounds/custom-bg.png',
     chatHistoryLimit: 50, // 聊天历史记录限制
     theme: 'dark', // 'dark' 或 'light'
   }

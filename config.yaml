@@ -47,7 +47,7 @@ character:
 # Live2D模型配置
 live2d:
   model_name: wuwuwu
-  model_path: public/live2d/models/wuwuwu/wuwuwu.model3.json
+  model_path: /home/gpr/AI-Streamer-Phy/public/live2d/models/wuwuwu/wuwuwu.model3.json
   scale: 0.6
   expressions:
     neutral: neutral
@@ -79,15 +79,15 @@ tts:
 
 # SoVITS语音合成配置 - 仅使用Arona预训练模型
 sovits:
-  sovits_path: "C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS"
+  sovits_path: "/home/gpr/AI-Streamer-Phy/GPT-SoVITS"
   use_pretrained: true
   
   # Arona预训练模型路径 - 使用绝对路径
-  pretrained_gpt_model: "C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/中配数据集制/GPT_weights_v2/ALuoNa_cn-e15.ckpt"
-  pretrained_sovits_model: "C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/中配数据集制/SoVITS_weights_v2/ALuoNa_cn_e16_s256.pth"
+  pretrained_gpt_model: "/home/gpr/AI-Streamer-Phy/audio_files/中配数据集制/GPT_weights_v2/ALuoNa_cn-e15.ckpt"
+  pretrained_sovits_model: "/home/gpr/AI-Streamer-Phy/audio_files/中配数据集制/SoVITS_weights_v2/ALuoNa_cn_e16_s256.pth"
   
   # 参考音频配置 - 使用绝对路径
-  reference_audio: "C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/arona_attendance_enter_1.wav"
+  reference_audio: "/home/gpr/AI-Streamer-Phy/audio_files/arona_attendance_enter_1.wav"
   prompt_text: "您回来啦，我等您很久啦！"
   
   # 推理参数

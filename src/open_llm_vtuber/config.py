@@ -62,7 +62,7 @@ class ConfigManager:
             },
             "live2d": {
                 "model_name": "wuwuwu",
-                "model_path": "public/live2d/models/wuwuwu/wuwuwu.model3.json",
+                "model_path": "/home/gpr/AI-Streamer-Phy/public/live2d/models/wuwuwu/wuwuwu.model3.json",
                 "scale": 0.6,
                 "expressions": {
                     "neutral": "neutral",

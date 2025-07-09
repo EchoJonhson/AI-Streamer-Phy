@@ -125,7 +125,7 @@ async def main():
             logger.error(f"❌ 参考音频不存在: {ref_audio_path}")
         
         # 检查Live2D模型文件
-        model_path = live2d_config.get('model_path', 'public/live2d/models/wuwuwu/wuwuwu.model3.json')
+        model_path = live2d_config.get('model_path', '/home/gpr/AI-Streamer-Phy/public/live2d/models/wuwuwu/wuwuwu.model3.json')
         full_model_path = os.path.join(BASE_DIR, model_path)
         
         if not os.path.exists(full_model_path):

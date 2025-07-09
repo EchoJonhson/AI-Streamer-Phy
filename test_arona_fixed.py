@@ -19,13 +19,13 @@ def test_arona_config():
     logger.info("🔧 测试Arona预训练模型配置...")
     
     # 检查模型文件
-    gpt_model = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/中配数据集制/GPT_weights_v2/ALuoNa_cn-e15.ckpt")
-    sovits_model = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/中配数据集制/SoVITS_weights_v2/ALuoNa_cn_e16_s256.pth")
-    ref_audio = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/audio_files/arona_attendance_enter_1.wav")
+    gpt_model = Path("/home/gpr/AI-Streamer-Phy/audio_files/中配数据集制/GPT_weights_v2/ALuoNa_cn-e15.ckpt")
+    sovits_model = Path("/home/gpr/AI-Streamer-Phy/audio_files/中配数据集制/SoVITS_weights_v2/ALuoNa_cn_e16_s256.pth")
+    ref_audio = Path("/home/gpr/AI-Streamer-Phy/audio_files/arona_attendance_enter_1.wav")
     
     # 检查BERT模型 - 修正路径
-    bert_path = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS/pretrained_models/chinese-roberta-wwm-ext-large")
-    cnhuhbert_path = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS/pretrained_models/chinese-hubert-base")
+    bert_path = Path("/home/gpr/AI-Streamer-Phy/GPT-SoVITS/pretrained_models/chinese-roberta-wwm-ext-large")
+    cnhuhbert_path = Path("/home/gpr/AI-Streamer-Phy/GPT-SoVITS/pretrained_models/chinese-hubert-base")
     
     logger.info("📁 检查模型文件:")
     logger.info(f"  GPT模型: {gpt_model}")
@@ -50,7 +50,7 @@ def test_arona_config():
     # 测试TTS_Config
     try:
         # 添加GPT-SoVITS路径
-        sovits_path = Path("C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS")
+        sovits_path = Path("/home/gpr/AI-Streamer-Phy/GPT-SoVITS")
         if sovits_path.exists():
             sys.path.insert(0, str(sovits_path))
             sys.path.insert(0, str(sovits_path / 'GPT_SoVITS'))

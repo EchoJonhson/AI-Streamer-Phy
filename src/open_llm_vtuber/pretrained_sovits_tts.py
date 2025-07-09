@@ -94,8 +94,8 @@ class PretrainedSoVITSTTS:
                 "version": self.model_version,
                 "t2s_weights_path": self.gpt_weights_path,
                 "vits_weights_path": self.sovits_weights_path,
-                "cnhuhbert_base_path": "C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS/GPT_SoVITS/pretrained_models/chinese-hubert-base",
-                "bert_base_path": "C:/Users/MSIK/Desktop/ChatBot/aistreamer/GPT-SoVITS/GPT_SoVITS/pretrained_models/chinese-roberta-wwm-ext-large",
+                "cnhuhbert_base_path": "/home/gpr/AI-Streamer-Phy/GPT-SoVITS/GPT_SoVITS/pretrained_models/chinese-hubert-base",
+                "bert_base_path": "/home/gpr/AI-Streamer-Phy/GPT-SoVITS/GPT_SoVITS/pretrained_models/chinese-roberta-wwm-ext-large",
             }
             
             # 初始化TTS模型
