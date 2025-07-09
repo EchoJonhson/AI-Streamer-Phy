@@ -26,6 +26,9 @@ from fastapi import WebSocket
 # from ..ai.agent.agent_factory import AgentFactory
 # from ..ai.translate.translate_factory import TranslateFactory
 
+# 现在可以导入已迁移的模块
+from ..core.config import ConfigManager
+# 其他配置类等待后续迁移
 # from ..core.config import (
 #     Config,
 #     AgentConfig,

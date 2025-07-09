@@ -11,15 +11,15 @@ from aiohttp import web
 
 # 暂时注释掉依赖尚未迁移模块的导入，等待后续重构阶段处理
 # from ..live2d.live2d_model import Live2DModel
-# from ..ai.llm_manager import llm_manager
+from ..ai.llm_manager import llm_manager
 from .config import ConfigManager
-# from ..ai.chat_history import chat_history
+from ..ai.chat_history import chat_history
 # 暂时注释掉依赖尚未迁移模块的导入，等待后续重构阶段处理
 # from ..voice.asr_manager import ASRManager
 # from ..voice.tts_manager import TTSManager
 # from ..voice.premium_tts import PremiumTTSManager
 # from ..voice.voice_api import VoiceAPI
-# from ..ai.qwen_client import QwenClient
+from ..ai.qwen_client import QwenClient
 
 logger = logging.getLogger(__name__)
 
@@ -1085,7 +1085,7 @@ class AIVTuberServer:
             logger.error(f"获取语音提供商信息失败: {e}")
             return web.json_response({'error': str(e)}, status=500)
 
-async def create_app(live2d_model: Live2DModel, api_key: str = None) -> AIVTuberServer:
+async def create_app(live2d_model = None, api_key: str = None) -> AIVTuberServer:
     """创建应用实例
 
     Args:

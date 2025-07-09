@@ -1,9 +1,25 @@
 """
-AI智能系统模块
+AI智能系统模块 - 重构阶段3
 
 包含：
-- llm_manager: LLM管理器
+- llm_manager: LLM管理器和多提供商支持
 - qwen_client: Qwen API客户端
 - chat_history: 聊天历史管理
-- conversations: 对话管理
+- llm_api: 通用LLM API接口
+- conversations: 对话管理（将在后续阶段完善）
 """
+
+# 导出主要AI模块
+from .llm_manager import LLMManager, llm_manager
+from .qwen_client import QwenClient  
+from .chat_history import ChatHistoryManager, chat_history
+from .llm_api import QwenAPI
+
+__all__ = [
+    'LLMManager',
+    'llm_manager',
+    'QwenClient',
+    'ChatHistoryManager', 
+    'chat_history',
+    'QwenAPI'
+]
