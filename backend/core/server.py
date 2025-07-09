@@ -9,8 +9,9 @@ from typing import Any, Dict, List, Optional, Union
 import aiohttp
 from aiohttp import web
 
-# 暂时注释掉依赖尚未迁移模块的导入，等待后续重构阶段处理
-# from ..live2d.live2d_model import Live2DModel
+# 导入Live2D模块 - 阶段5重构已完成
+from ..live2d.live2d_model import Live2DModel
+from ..live2d.model_controller import ModelController
 from ..ai.llm_manager import llm_manager
 from .config import ConfigManager
 from ..ai.chat_history import chat_history
