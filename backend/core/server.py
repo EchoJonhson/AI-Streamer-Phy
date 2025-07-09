@@ -14,11 +14,11 @@ from aiohttp import web
 from ..ai.llm_manager import llm_manager
 from .config import ConfigManager
 from ..ai.chat_history import chat_history
-# 暂时注释掉依赖尚未迁移模块的导入，等待后续重构阶段处理
-# from ..voice.asr_manager import ASRManager
-# from ..voice.tts_manager import TTSManager
-# from ..voice.premium_tts import PremiumTTSManager
-# from ..voice.voice_api import VoiceAPI
+# 导入语音模块 - 阶段4重构已完成
+from ..voice.asr_manager import ASRManager
+from ..voice.tts_manager import TTSManager
+from ..voice.premium_tts import PremiumTTSManager
+from ..voice.voice_api import VoiceAPI
 from ..ai.qwen_client import QwenClient
 
 logger = logging.getLogger(__name__)

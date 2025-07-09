@@ -132,12 +132,33 @@ AI-Streamer-Phy/
 - AI对话逻辑已集中到backend/ai/模块
 - 保持了与原有代码的向后兼容性
 
-### ⏳ 阶段4: 重构后端语音模块 (backend/voice/)
-- 迁移tts_manager.py → backend/voice/tts_manager.py
-- 迁移asr_manager.py → backend/voice/asr_manager.py
-- 迁移sovits_inference_engine.py → backend/voice/sovits_inference_engine.py
-- 迁移voice_api.py → backend/voice/voice_api.py
-- 重点: 语音相关功能统一管理
+### ✅ 阶段4: 重构后端语音模块 (backend/voice/) (已完成)
+
+**完成时间**: 2025-01-09
+
+**完成内容**:
+- ✅ 迁移tts_manager.py → backend/voice/tts_manager.py
+- ✅ 迁移asr_manager.py → backend/voice/asr_manager.py
+- ✅ 迁移sovits_inference_engine.py → backend/voice/sovits_inference_engine.py
+- ✅ 迁移voice_api.py → backend/voice/voice_api.py
+- ✅ 迁移premium_tts.py → backend/voice/premium_tts.py
+- ✅ 迁移sovits_tts.py → backend/voice/sovits_tts.py
+- ✅ 更新backend/voice/__init__.py导出语音模块
+- ✅ 创建向后兼容层 (src/open_llm_vtuber/voice_compat.py)
+- ✅ 恢复backend/core模块对语音模块的导入引用
+- ✅ 验证所有语音模块正常导入和使用
+
+**技术特点**:
+- 统一管理TTS、ASR、SoVITS等语音相关功能
+- 支持多种TTS提供商（浏览器、SoVITS引擎、Enhanced Edge TTS）
+- 完善的语音识别管理（浏览器原生、百度ASR）
+- 高质量语音合成和训练功能
+- 健壮的依赖管理和错误处理
+
+**注意事项**:
+- 语音功能已集中到backend/voice/模块
+- 保持了与原有代码的向后兼容性
+- SoVITS推理引擎支持可选依赖导入
 
 ### ⏳ 阶段5: 重构后端Live2D模块 (backend/live2d/)
 - 迁移live2d_model.py → backend/live2d/live2d_model.py
@@ -177,15 +198,16 @@ AI-Streamer-Phy/
 
 ## 📊 总体进展
 
-**完成进度**: 3/10 (30%)
+**完成进度**: 4/10 (40%)
 
 **已完成**: 
 - ✅ 阶段1: 创建新的目录结构框架
 - ✅ 阶段2: 重构后端核心模块 (backend/core/)
 - ✅ 阶段3: 重构后端AI模块 (backend/ai/)
+- ✅ 阶段4: 重构后端语音模块 (backend/voice/)
 
 **进行中**: 
-- ⏳ 准备阶段4: 重构后端语音模块
+- ⏳ 准备阶段5: 重构后端Live2D模块
 
 **预计完成时间**: 根据执行进度确定
 
