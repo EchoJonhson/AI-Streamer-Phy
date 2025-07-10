@@ -222,10 +222,47 @@ AI-Streamer-Phy/
 - 原有的 src/open_llm_vtuber/ 包作为向后兼容层保留
 - 新的前端结构更便于团队协作和维护
 
-### ⏳ 阶段7: 整理开发工具和测试 (scripts/, tests/)
-- 迁移所有脚本文件到scripts/目录
-- 重组测试文件到tests/目录，按功能模块分类
-- 重点: 开发工具统一管理
+### ✅ 阶段7: 整理开发工具和测试 (scripts/, tests/) (已完成)
+
+**完成时间**: 2025-01-10
+
+**完成内容**:
+- ✅ 迁移所有脚本文件到scripts/目录
+- ✅ 重组测试文件到tests/目录，按功能模块分类
+- ✅ 更新脚本文件中的路径引用
+- ✅ 创建scripts/和tests/目录的README说明文档
+- ✅ 为测试目录创建Python包结构(__init__.py文件)
+- ✅ 验证迁移后的脚本和测试功能
+
+**迁移的脚本文件**:
+- run.py - 主程序启动脚本
+- check_audio_content.py - 音频内容检查脚本
+- copy_ffmpeg.py - FFmpeg文件复制脚本
+- download_pretrained_models.py - 预训练模型下载脚本
+- install_ffmpeg.py - FFmpeg安装脚本
+- download_models.bat - Windows批处理模型下载脚本
+- download_models.ps1 - PowerShell模型下载脚本
+- install_ffmpeg_files.bat - Windows批处理FFmpeg安装脚本
+
+**测试文件分类**:
+- tests/ai/ - AI模块测试 (1个文件)
+- tests/voice/ - 语音模块测试 (6个文件)
+- tests/frontend/ - 前端模块测试 (1个文件)
+- tests/config/ - 配置模块测试 (2个文件)
+- tests/integration/ - 集成测试 (预留)
+
+**技术特点**:
+- 统一的脚本管理和执行环境
+- 按功能模块分类的测试结构
+- 更新后的路径引用确保脚本在新位置正常运行
+- 完善的文档说明便于开发使用
+- Python包结构便于测试导入和组织
+
+**注意事项**:
+- 所有脚本已适配新的目录结构
+- 测试文件已按功能模块分类管理
+- 脚本中的路径引用已更新为相对于项目根目录
+- 开发工具已统一管理，便于维护
 
 ### ⏳ 阶段8: 整理文档和数据结构 (docs/, data/)
 - 重组文档文件到docs/目录
@@ -249,7 +286,7 @@ AI-Streamer-Phy/
 
 ## 📊 总体进展
 
-**完成进度**: 6/10 (60%)
+**完成进度**: 7/10 (70%)
 
 **已完成**: 
 - ✅ 阶段1: 创建新的目录结构框架
@@ -258,9 +295,10 @@ AI-Streamer-Phy/
 - ✅ 阶段4: 重构后端语音模块 (backend/voice/)
 - ✅ 阶段5: 重构后端Live2D模块 (backend/live2d/)
 - ✅ 阶段6: 重构前端结构 (frontend/)
+- ✅ 阶段7: 整理开发工具和测试 (scripts/, tests/)
 
 **进行中**: 
-- ⏳ 准备阶段7: 整理开发工具和测试
+- ⏳ 准备阶段8: 整理文档和数据结构
 
 **预计完成时间**: 根据执行进度确定
 
