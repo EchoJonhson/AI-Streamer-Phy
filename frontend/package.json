@@ -1,16 +1,13 @@
 {
-  "name": "virtual-ai-streamer",
+  "name": "ai-streamer-phy-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "lint": "cd frontend && npm run lint",
-    "preview": "cd frontend && npm run preview",
-    "frontend:install": "cd frontend && npm install",
-    "frontend:dev": "cd frontend && npm run dev",
-    "frontend:build": "cd frontend && npm run build"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "dependencies": {
     "pixi-live2d-display": "^0.4.0",

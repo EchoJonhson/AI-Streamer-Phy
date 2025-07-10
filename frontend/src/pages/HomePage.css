@@ -1,0 +1,142 @@
+.home-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 150px);
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a35 100%);
+}
+
+.welcome-container {
+  max-width: 800px;
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+  background-color: rgba(30, 30, 50, 0.7);
+  border-radius: 20px;
+  box-shadow: 0 0 30px rgba(255, 85, 170, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 85, 170, 0.3);
+}
+
+.welcome-title {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(90deg, #ff55aa, #55aaff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(255, 85, 170, 0.5);
+}
+
+.welcome-subtitle {
+  font-size: 1.2rem;
+  margin-bottom: 2.5rem;
+  color: #c0c0ff;
+}
+
+.form-container {
+  margin: 2rem auto;
+  max-width: 400px;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #c0c0ff;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  background-color: rgba(20, 20, 40, 0.6);
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #ff55aa;
+  box-shadow: 0 0 0 2px rgba(255, 85, 170, 0.3);
+}
+
+.enter-button {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(90deg, #ff55aa, #ff557f);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(255, 85, 170, 0.4);
+}
+
+.enter-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 85, 170, 0.6);
+}
+
+.enter-button:active {
+  transform: translateY(1px);
+}
+
+.features {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  gap: 1.5rem;
+}
+
+.feature {
+  flex: 1;
+  padding: 1.5rem;
+  background-color: rgba(40, 40, 70, 0.6);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.feature h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+  color: #ff55aa;
+}
+
+.feature p {
+  font-size: 0.9rem;
+  color: #a0a0cc;
+}
+
+@media (max-width: 768px) {
+  .welcome-title {
+    font-size: 2.2rem;
+  }
+  
+  .features {
+    flex-direction: column;
+  }
+  
+  .welcome-container {
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+} 

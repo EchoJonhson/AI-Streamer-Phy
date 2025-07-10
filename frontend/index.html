@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="虚拟AI主播 - 基于AI技术的虚拟主播互动平台" />
+    <meta name="keywords" content="虚拟主播,AI,Live2D,互动,直播" />
+    <title>虚拟AI主播</title>
+    <!-- WebGL兼容性修复 -->
+    <script>
+      // 全局错误处理器
+      window.addEventListener('error', function(e) {
+        console.warn('全局错误捕获:', e.message);
+        
+        // 处理WebGL相关错误
+        if (e.message && (
+            e.message.includes('WebGL') || 
+            e.message.includes('PIXI') || 
+            e.message.includes('shader') ||
+            e.message.includes('checkMaxIfStatementsInShader')
+        )) {
+          console.warn('检测到WebGL相关错误，尝试修复');
+          
+          // 修复checkMaxIfStatementsInShader问题
+          if (window.PIXI && window.PIXI.glCore && window.PIXI.glCore.shader) {
+            window.PIXI.glCore.shader.checkMaxIfStatementsInShader = function() {
+              return 0;
+            };
+          }
+          
+          // 修复WebGL上下文问题
+          if (window.PIXI && window.PIXI.settings) {
+            window.PIXI.settings.PREFER_ENV = 1; // PIXI.ENV.WEBGL
+          }
+        }
+      }, true);
+      
+      // 修复getContextAttributes问题
+      (function() {
+        // 保存原始的getContext方法
+        const originalGetContext = HTMLCanvasElement.prototype.getContext;
+        
+        // 重写getContext方法
+        HTMLCanvasElement.prototype.getContext = function() {
+          const context = originalGetContext.apply(this, arguments);
+          
+          // 如果是WebGL上下文且没有getContextAttributes方法
+          if (context && (arguments[0] === 'webgl' || arguments[0] === 'webgl2') && !context.getContextAttributes) {
+            console.log('添加缺失的getContextAttributes方法');
+            // 添加缺失的getContextAttributes方法
+            context.getContextAttributes = function() {
+              return {
+                alpha: true,
+                antialias: true,
+                depth: true,
+                failIfMajorPerformanceCaveat: false,
+                powerPreference: 'default',
+                premultipliedAlpha: true,
+                preserveDrawingBuffer: false,
+                stencil: true,
+                desynchronized: false
+              };
+            };
+          }
+          
+          return context;
+        };
+        
+        console.log('已应用getContextAttributes polyfill');
+      })();
+    </script>
+    
+    <!-- PIXI.js库 -->
+    <script src="https://pixijs.download/v6.5.0/pixi.min.js"></script>
+    
+    <!-- PIXI-Live2D加载器 -->
+    <script src="./libs/pixi-live2d-loader.js"></script>
+    
+    <!-- Live2D Cubism 2 运行时 -->
+    <script src="./libs/live2d.min.js"></script>
+    
+    <!-- Live2D Cubism 4 核心库 -->
+    <script src="./live2d/core/live2dcubismcore.min.js"></script>
+    
+    <!-- PIXI-Live2D-Display库 -->
+    <script src="./libs/pixi-live2d-display.min.js"></script>
+    
+    <!-- PIXI-Live2D初始化脚本 -->
+    <script src="./libs/pixi-live2d-initialize.js"></script>
+    
+    <!-- 备用CDN加载 -->
+    <script>
+      // 检测本地脚本是否加载成功，如果失败则从CDN加载
+      window.addEventListener('error', function(e) {
+        var src = e.target.src || '';
+        if (src.includes('live2dcubismcore.min.js')) {
+          console.warn('本地Live2D核心库加载失败，尝试从CDN加载');
+          var script = document.createElement('script');
+          script.src = 'https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js';
+          document.head.appendChild(script);
+        }
+      }, true);
+    </script>
+    
+    <!-- 预加载脚本 -->
+    <script src="./live2d-preload.js" defer></script>
+    
+    <!-- 初始化检查 -->
+    <script>
+      // 检查Cubism运行时是否加载成功
+      window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          console.log('Cubism 4运行时状态:', window.Live2DCubismCore ? '已加载' : '未加载');
+          console.log('Cubism 2运行时状态:', window.Live2D ? '已加载' : '未加载');
+          console.log('PIXI.js状态:', window.PIXI ? '已加载' : '未加载');
+          console.log('PIXI-Live2D-Display状态:', window.PIXI && window.PIXI.live2d ? '已加载' : '未加载');
+          
+          // 如果核心库未加载，尝试再次加载
+          if (!window.Live2DCubismCore) {
+            console.warn('DOMContentLoaded后核心库未加载，尝试再次加载...');
+            var script = document.createElement('script');
+            script.src = './live2d/core/live2dcubismcore.min.js';
+            document.head.appendChild(script);
+          }
+          
+          // 如果Cubism 2运行时未加载，尝试再次加载
+          if (!window.Live2D) {
+            console.warn('DOMContentLoaded后Cubism 2运行时未加载，尝试再次加载...');
+            var script = document.createElement('script');
+            script.src = './libs/live2d.min.js';
+            document.head.appendChild(script);
+          }
+          
+          // 如果PIXI-Live2D-Display未加载，使用我们的加载器加载
+          if (!window.PIXI || !window.PIXI.live2d) {
+            console.warn('PIXI-Live2D-Display未加载，使用加载器加载');
+            if (window.Live2DLoader) {
+              window.Live2DLoader.initLive2D()
+                .then(function(result) {
+                  console.log('Live2DLoader初始化结果:', result);
+                });
+            } else {
+              console.error('Live2DLoader未加载，无法初始化PIXI-Live2D-Display');
+            }
+          }
+        }, 1000); // 延迟检查，确保有足够时间加载
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.jsx"></script>
+  </body>
+</html>

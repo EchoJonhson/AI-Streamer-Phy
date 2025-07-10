@@ -7,10 +7,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './frontend/src'),
+      '@': path.resolve(__dirname, './src'),
     },
   },
-  root: './frontend',
   base: './', // 确保使用相对路径
   build: {
     outDir: 'dist',
