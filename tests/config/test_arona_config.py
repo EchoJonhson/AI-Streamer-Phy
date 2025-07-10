@@ -20,7 +20,7 @@ def test_arona_config():
     logger.info("🎯 开始验证Arona预训练模型配置...")
     
     # 1. 检查配置文件
-    config_path = "config.yaml"
+    config_path = "data/config.yaml"
     if not os.path.exists(config_path):
         logger.error(f"❌ 配置文件不存在: {config_path}")
         return False

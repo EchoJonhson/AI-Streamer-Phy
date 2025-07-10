@@ -35,11 +35,11 @@ pip install -r requirements.txt
 
 3. **下载预训练模型**
 ```bash
-python download_pretrained_models.py
+python scripts/download_pretrained_models.py
 ```
 
 4. **配置API密钥**
-编辑 `config.yaml` 文件，设置你的Qwen API密钥：
+编辑 `data/config.yaml` 文件，设置你的Qwen API密钥：
 ```yaml
 llm:
   api_key: "your-qwen-api-key-here"

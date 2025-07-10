@@ -25,13 +25,17 @@ if os.path.exists(GPT_SOVITS_PATH):
     sys.path.insert(0, GPT_SOVITS_PATH)
     sys.path.insert(0, os.path.join(GPT_SOVITS_PATH, "GPT_SoVITS"))
 
+# 确保日志目录存在
+log_dir = os.path.join(BASE_DIR, 'data', 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
 # 设置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(os.path.join(BASE_DIR, 'app.log'), encoding='utf-8')
+        logging.FileHandler(os.path.join(BASE_DIR, 'data', 'logs', 'app.log'), encoding='utf-8')
     ]
 )
 
@@ -39,20 +43,34 @@ logger = logging.getLogger(__name__)
 
 # 导入应用模块
 try:
-    from src.open_llm_vtuber.config import ConfigManager
-    from src.open_llm_vtuber.chat_history import chat_history
-    from src.open_llm_vtuber.llm_manager import llm_manager
-    from src.open_llm_vtuber.live2d_model import Live2DModel
-    from src.open_llm_vtuber.tts_manager import TTSManager
-    from src.open_llm_vtuber.sovits_inference_engine import SoVITSInferenceEngine
-    from src.open_llm_vtuber.server import create_app
+    from backend.core.config import ConfigManager
+    from backend.ai.chat_history import chat_history
+    from backend.ai.llm_manager import llm_manager
+    from backend.live2d.live2d_model import Live2DModel
+    from backend.voice.tts_manager import TTSManager
+    from backend.voice.sovits_inference_engine import SoVITSInferenceEngine
+    from backend.core.server import create_app
     
     logger.info("✅ 所有模块导入成功")
     
 except ImportError as e:
     logger.error(f"❌ 模块导入失败: {e}")
     logger.error("请确保已安装所有依赖: pip install -r requirements.txt")
-    sys.exit(1)
+    
+    # 尝试回退到旧的导入路径（向后兼容）
+    try:
+        logger.info("🔄 尝试使用向后兼容路径...")
+        from src.open_llm_vtuber.config import ConfigManager
+        from src.open_llm_vtuber.chat_history import chat_history
+        from src.open_llm_vtuber.llm_manager import llm_manager
+        from src.open_llm_vtuber.live2d_model import Live2DModel
+        from src.open_llm_vtuber.tts_manager import TTSManager
+        from src.open_llm_vtuber.sovits_inference_engine import SoVITSInferenceEngine
+        from src.open_llm_vtuber.server import create_app
+        logger.info("✅ 向后兼容模块导入成功")
+    except ImportError as e2:
+        logger.error(f"❌ 向后兼容模块导入也失败: {e2}")
+        sys.exit(1)
 
 # WebSocket和Web相关
 import websockets
@@ -68,7 +86,11 @@ import socketserver
 from urllib.parse import urlparse, parse_qs
 
 # 应用模块
-from src.open_llm_vtuber.agent import create_agent
+try:
+    from backend.ai.agent import create_agent
+except ImportError:
+    # 向后兼容
+    from src.open_llm_vtuber.agent import create_agent
 
 # 全局变量
 config = None
@@ -82,8 +104,9 @@ async def main():
     logger.info("🚀 启动AI虚拟主播应用 (修复版)")
     
     try:
-        # 初始化配置管理器
-        config = ConfigManager()
+        # 初始化配置管理器 - 使用新的配置文件路径
+        config_path = os.path.join(BASE_DIR, "data", "config.yaml")
+        config = ConfigManager(config_path)
         logger.info("✅ 配置管理器初始化成功")
         
         # 初始化SoVITS推理引擎
@@ -167,7 +190,10 @@ async def main():
         
         # 检查Qwen API状态（异步检查）
         try:
-            from src.open_llm_vtuber.qwen_client import QwenClient
+            try:
+                from backend.ai.qwen_client import QwenClient
+            except ImportError:
+                from src.open_llm_vtuber.qwen_client import QwenClient
             qwen_client = QwenClient()
             test_response = await qwen_client.generate_response("你好")
             if test_response:

@@ -10,13 +10,19 @@ logger = logging.getLogger(__name__)
 class ConfigManager:
     """配置管理器"""
     
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = None):
         """初始化配置管理器
         
         Args:
             config_path: 配置文件路径
         """
-        self.config_path = config_path
+        if config_path is None:
+            # 默认使用data/config.yaml路径
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(os.path.dirname(script_dir))
+            self.config_path = os.path.join(project_root, "data", "config.yaml")
+        else:
+            self.config_path = config_path
         self.config = self._load_default_config()
         self.load_config()
     
