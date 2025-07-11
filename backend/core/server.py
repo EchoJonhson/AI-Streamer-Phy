@@ -203,7 +203,8 @@ class AIVTuberServer:
             FileResponse 或 Response (404)
         """
         path = request.match_info['path']
-        file_path = os.path.join("temp", path)
+        temp_dir = os.path.join(os.getcwd(), "temp")
+        file_path = os.path.join(temp_dir, path)
         
         logger.info(f"请求临时文件: {path}")
         logger.info(f"完整路径: {file_path}")
