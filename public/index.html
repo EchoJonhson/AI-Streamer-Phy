@@ -1700,9 +1700,73 @@
             loadingIndicator.style.display = 'none';
         }
 
+        // 请求麦克风权限
+        async function requestMicrophonePermission() {
+            try {
+                debugLog('请求麦克风权限...');
+                
+                // 首先检查权限API是否可用
+                if ('permissions' in navigator) {
+                    const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+                    debugLog(`麦克风权限状态: ${permissionStatus.state}`);
+                    
+                    if (permissionStatus.state === 'denied') {
+                        throw new Error('麦克风权限被永久拒绝');
+                    }
+                }
+
+                // 请求媒体流权限（这会触发浏览器的权限对话框）
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // 立即停止流，我们只是为了获取权限
+                stream.getTracks().forEach(track => track.stop());
+                debugLog('✓ 麦克风权限获取成功');
+                return true;
+                
+            } catch (error) {
+                debugLog(`❌ 麦克风权限请求失败: ${error.message}`);
+                
+                // 显示用户友好的错误提示
+                let errorMessage = '';
+                if (error.name === 'NotAllowedError' || error.message.includes('权限被拒绝')) {
+                    errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后刷新页面';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage = '未检测到麦克风设备，请检查硬件连接';
+                } else if (error.name === 'NotSupportedError') {
+                    errorMessage = '当前浏览器不支持麦克风访问功能';
+                } else {
+                    errorMessage = `麦克风访问失败: ${error.message}`;
+                }
+                
+                showNotification(errorMessage, 'error');
+                return false;
+            }
+        }
+
         // 初始化语音识别
-        function initSpeechRecognition() {
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        async function initSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                debugLog('浏览器不支持语音识别');
+                voiceBtn.style.display = 'none';
+                showNotification('当前浏览器不支持语音识别功能', 'warning');
+                return;
+            }
+
+            // 请求麦克风权限
+            const hasPermission = await requestMicrophonePermission();
+            if (!hasPermission) {
+                debugLog('麦克风权限被拒绝，语音输入不可用');
+                voiceBtn.style.display = 'none';
+                return;
+            }
+
+            try {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 speechRecognition = new SpeechRecognition();
 
@@ -1714,6 +1778,7 @@
                     debugLog('语音识别开始');
                     isRecording = true;
                     voiceBtn.classList.add('recording');
+                    showNotification('开始语音识别，请说话...', 'info');
                 };
 
                 speechRecognition.onresult = function(event) {
@@ -1730,11 +1795,32 @@
                         debugLog(`语音识别结果: ${finalTranscript}`);
                         chatInput.value = finalTranscript;
                         sendMessage();
+                        showNotification('语音识别完成', 'success');
                     }
                 };
 
                 speechRecognition.onerror = function(event) {
                     debugLog(`语音识别错误: ${event.error}`);
+                    let errorMessage = '';
+                    
+                    switch(event.error) {
+                        case 'not-allowed':
+                            errorMessage = '麦克风权限被拒绝';
+                            break;
+                        case 'no-speech':
+                            errorMessage = '未检测到语音输入';
+                            break;
+                        case 'audio-capture':
+                            errorMessage = '音频捕获失败';
+                            break;
+                        case 'network':
+                            errorMessage = '网络错误，请检查网络连接';
+                            break;
+                        default:
+                            errorMessage = `语音识别错误: ${event.error}`;
+                    }
+                    
+                    showNotification(errorMessage, 'error');
                     stopRecording();
                 };
 
@@ -1744,9 +1830,12 @@
                 };
 
                 voiceEnabled = true;
-                debugLog('语音识别初始化成功');
-            } else {
-                debugLog('浏览器不支持语音识别');
+                debugLog('✓ 语音识别初始化成功');
+                showNotification('语音识别功能已启用', 'success');
+                
+            } catch (error) {
+                debugLog(`语音识别初始化失败: ${error.message}`);
+                showNotification('语音识别初始化失败', 'error');
                 voiceBtn.style.display = 'none';
             }
         }
