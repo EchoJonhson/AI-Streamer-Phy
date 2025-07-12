@@ -10,6 +10,7 @@ import os
 import tempfile
 import asyncio
 import re
+from pathlib import Path
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,38 @@ class TTSManager:
         # 只保留中英文、数字、常用标点
         return re.sub(r"[^\u4e00-\u9fa5a-zA-Z0-9，。！？,.!?:;\s]", "", text)
     
+    def _convert_absolute_path_to_url(self, file_path: str) -> str:
+        """将绝对文件路径转换为相对URL路径
+        
+        Args:
+            file_path: 绝对文件路径，如 /home/gpr/AI-Streamer-Phy/temp/generated_audio/file.wav
+            
+        Returns:
+            相对URL路径，如 /temp/generated_audio/file.wav
+        """
+        try:
+            # 获取项目根目录
+            path_obj = Path(file_path)
+            
+            # 查找temp目录及其后的路径
+            parts = path_obj.parts
+            if 'temp' in parts:
+                temp_index = parts.index('temp')
+                # 构建相对路径，以/temp/开头
+                relative_parts = parts[temp_index:]
+                relative_url = '/' + '/'.join(relative_parts)
+                logger.info(f"路径转换: {file_path} -> {relative_url}")
+                return relative_url
+            else:
+                logger.warning(f"无法在路径中找到temp目录: {file_path}")
+                # 回退方案：如果找不到temp，就使用文件名
+                return f"/temp/generated_audio/{path_obj.name}"
+                
+        except Exception as e:
+            logger.error(f"路径转换失败: {e}")
+            # 错误情况下的回退方案
+            return f"/temp/generated_audio/{Path(file_path).name}"
+    
     async def synthesize(self, text: str, **kwargs) -> Optional[Dict[str, Any]]:
         """
         合成语音 - 使用SoVITS
@@ -106,10 +139,14 @@ class TTSManager:
                 
             if audio_path and os.path.exists(audio_path):
                 logger.info(f"✅ SoVITS语音合成成功: {audio_path}")
+                
+                # 将绝对路径转换为相对URL路径
+                audio_url = self._convert_absolute_path_to_url(audio_path)
+                
                 return {
                     "type": "sovits_audio",
                     "text": text,
-                    "audio_file": audio_path,
+                    "audio_file": audio_url,  # 使用转换后的相对URL
                     "voice_params": {
                         "rate": 1.0,
                         "pitch": 1.0,
