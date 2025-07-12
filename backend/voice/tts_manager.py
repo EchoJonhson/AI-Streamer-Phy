@@ -146,7 +146,8 @@ class TTSManager:
                 return {
                     "type": "sovits_audio",
                     "text": text,
-                    "audio_file": audio_url,  # 使用转换后的相对URL
+                    "audio_file": audio_url,  # 用于前端URL访问
+                    "audio_file_path": audio_path,  # 用于服务器文件读取
                     "voice_params": {
                         "rate": 1.0,
                         "pitch": 1.0,
