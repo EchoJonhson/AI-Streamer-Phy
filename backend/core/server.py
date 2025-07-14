@@ -725,7 +725,13 @@ class AIVTuberServer:
             ws: WebSocket连接
             text: 要合成的文本
         """
+        # 检查是否有TTS任务正在处理中，避免重复处理
+        if hasattr(self, '_tts_processing') and self._tts_processing:
+            logger.warning("⚠️ TTS任务正在处理中，跳过重复请求")
+            return
+            
         try:
+            self._tts_processing = True
             logger.info(f"🎯 开始TTS语音合成: {text[:50]}...")
             
             # 使用新的TTS管理器
@@ -792,12 +798,15 @@ class AIVTuberServer:
                 })
                 
         except Exception as e:
-            logger.error(f"❌ 语音合成异常: {e}")
+            logger.error(f"❌ TTS处理失败: {e}")
             # 异常时也回退到浏览器TTS
             await self.safe_send_json(ws, {
                 "type": "tts_browser",
                 "data": {"text": text}
             })
+        finally:
+            # 确保处理标志位被清除
+            self._tts_processing = False
     
     async def get_model_config(self, request):
         """获取模型配置的API

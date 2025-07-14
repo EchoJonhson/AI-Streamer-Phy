@@ -1410,10 +1410,11 @@
                 if (data.data.emotion) {
                     setExpression(data.data.emotion);
                 }
-                // 自动播放AI回复的语音（仅在用户激活语音上下文后）
-                if (data.data.text && speechSynthesis && window.speechContextActivated) {
+                // 注意：禁用自动语音播放以避免与SoVITS音频冲突
+                // 只在没有SoVITS音频时才使用浏览器TTS
+                if (data.data.text && speechSynthesis && window.speechContextActivated && !window.sovitsAudioPlaying) {
                     setTimeout(() => {
-                        debugLog('自动播放AI回复语音');
+                        debugLog('自动播放AI回复语音(浏览器TTS)');
                         speakText(data.data.text);
                     }, 500); // 延迟500ms播放，确保界面更新完成
                 } else if (data.data.text && speechSynthesis) {
@@ -1434,6 +1435,9 @@
                 const ttsData = data.data;
                 debugLog(`🎵 收到SoVITS音频指令: ${ttsData.text.substring(0, 30)}...`);
 
+                // 设置标志位防止重复播放
+                window.sovitsAudioPlaying = true;
+                
                 // 播放SoVITS生成的音频文件
                 playSoVITSAudio(ttsData.audio_file);
             } else if (type === 'voice_status') {
@@ -2278,10 +2282,17 @@
                 return;
             }
 
+            // 检查是否已经在播放音频，防止重复播放
+            if (window.currentSoVITSAudio && !window.currentSoVITSAudio.paused) {
+                debugLog('⚠️ SoVITS音频已在播放中，跳过重复播放');
+                return;
+            }
+
             debugLog(`🎵 播放SoVITS音频: ${audioFilePath}`);
 
             // 创建音频元素
             const audio = new Audio(audioFilePath);
+            window.currentSoVITSAudio = audio;
 
             // 设置音频事件
             audio.onloadstart = function() {
@@ -2303,6 +2314,10 @@
                 actionBtn.classList.remove('speaking');
                 actionBtn.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
                 debugLog('🎵 SoVITS音频播放完成');
+                
+                // 清除当前音频引用和标志位
+                window.currentSoVITSAudio = null;
+                window.sovitsAudioPlaying = false;
             };
 
             audio.onerror = function(error) {
@@ -2310,6 +2325,10 @@
                 actionBtn.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
                 debugLog(`❌ SoVITS音频播放失败: ${error}`);
                 showNotification('SoVITS音频播放失败', 'error');
+                
+                // 清除当前音频引用和标志位
+                window.currentSoVITSAudio = null;
+                window.sovitsAudioPlaying = false;
             };
 
             // 加载音频
