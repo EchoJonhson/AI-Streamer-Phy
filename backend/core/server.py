@@ -751,7 +751,9 @@ class AIVTuberServer:
                         # 如果是音频文件路径，读取文件并转换为base64
                         import base64
                         try:
-                            with open(tts_result["audio_file"], "rb") as audio_file:
+                            # 使用文件系统路径而不是URL路径
+                            file_path = tts_result.get("audio_file_path", tts_result["audio_file"])
+                            with open(file_path, "rb") as audio_file:
                                 audio_data = base64.b64encode(audio_file.read()).decode('utf-8')
                             await self.safe_send_json(ws, {
                                 "type": "tts_result",
