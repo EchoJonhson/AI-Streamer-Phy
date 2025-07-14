@@ -84,7 +84,7 @@ python api_v2.py --gpt_path ... --sovits_path ... --host 127.0.0.1 --port 9880
 **现在的解决方案：**
 ```python
 # ✅ 简化版本直接集成
-from src.open_llm_vtuber.simple_sovits_tts import SimpleSoVITSTTS
+from backend.voice.simple_sovits_tts import SimpleSoVITSTTS
 # 优点：无需API服务器、依赖简单、稳定可靠
 ```
 

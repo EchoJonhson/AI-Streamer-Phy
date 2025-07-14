@@ -35,6 +35,9 @@ class TTSManager:
         # 模式优先级
         self.priority = self.tts_config.get('priority', ['sovits', 'browser'])
         
+        # 添加并发控制锁
+        self._synthesis_lock = asyncio.Lock()
+        
     def initialize(self) -> bool:
         """初始化TTS管理器"""
         try:
@@ -112,7 +115,7 @@ class TTSManager:
     
     async def synthesize(self, text: str, **kwargs) -> Optional[Dict[str, Any]]:
         """
-        合成语音 - 使用SoVITS
+        合成语音 - 使用SoVITS (带并发控制)
         
         Args:
             text: 要合成的文本
@@ -121,46 +124,48 @@ class TTSManager:
         Returns:
             合成结果字典或None
         """
-        try:
-            text = self.clean_text(text.strip())
-            if not text:
-                logger.error("❌ 文本为空，无法合成语音")
-                return None
-            
-            logger.info(f"🎵 开始SoVITS语音合成: {text[:50]}...")
-            
-            # 必须使用SoVITS推理引擎
-            if not self.sovits_engine:
-                logger.error("❌ SoVITS推理引擎未初始化")
-                return None
+        # 使用锁确保同时只有一个语音合成任务运行
+        async with self._synthesis_lock:
+            try:
+                text = self.clean_text(text.strip())
+                if not text:
+                    logger.error("❌ 文本为空，无法合成语音")
+                    return None
                 
-            # 使用异步方法生成语音
-            audio_path = await self.sovits_engine.generate_speech(text)
+                logger.info(f"🎵 开始SoVITS语音合成: {text[:50]}...")
                 
-            if audio_path and os.path.exists(audio_path):
-                logger.info(f"✅ SoVITS语音合成成功: {audio_path}")
-                
-                # 将绝对路径转换为相对URL路径
-                audio_url = self._convert_absolute_path_to_url(audio_path)
-                
-                return {
-                    "type": "sovits_audio",
-                    "text": text,
-                    "audio_file": audio_url,  # 用于前端URL访问
-                    "audio_file_path": audio_path,  # 用于服务器文件读取
-                    "voice_params": {
-                        "rate": 1.0,
-                        "pitch": 1.0,
-                        "volume": 1.0
+                # 必须使用SoVITS推理引擎
+                if not self.sovits_engine:
+                    logger.error("❌ SoVITS推理引擎未初始化")
+                    return None
+                    
+                # 使用异步方法生成语音
+                audio_path = await self.sovits_engine.generate_speech(text)
+                    
+                if audio_path and os.path.exists(audio_path):
+                    logger.info(f"✅ SoVITS语音合成成功: {audio_path}")
+                    
+                    # 将绝对路径转换为相对URL路径
+                    audio_url = self._convert_absolute_path_to_url(audio_path)
+                    
+                    return {
+                        "type": "sovits_audio",
+                        "text": text,
+                        "audio_file": audio_url,  # 用于前端URL访问
+                        "audio_file_path": audio_path,  # 用于服务器文件读取
+                        "voice_params": {
+                            "rate": 1.0,
+                            "pitch": 1.0,
+                            "volume": 1.0
+                        }
                     }
-                }
-            else:
-                logger.error("❌ SoVITS语音合成失败")
+                else:
+                    logger.error("❌ SoVITS语音合成失败")
+                    return None
+                
+            except Exception as e:
+                logger.error(f"❌ SoVITS语音合成异常: {e}")
                 return None
-            
-        except Exception as e:
-            logger.error(f"❌ SoVITS语音合成异常: {e}")
-            return None
     
     def synthesize_sync(self, text: str, **kwargs) -> Optional[str]:
         """
@@ -184,18 +189,32 @@ class TTSManager:
             
             # 尝试使用SoVITS推理引擎
             if self.current_provider == 'sovits_engine' and self.sovits_engine:
-                # 使用同步方式调用异步方法
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+                # 获取当前事件循环，如果不存在则创建新的
                 try:
-                    result = loop.run_until_complete(self.sovits_engine.generate_speech(text, **kwargs))
-                    if result:
-                        logger.info("✅ SoVITS推理引擎合成成功")
-                        return result
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # 如果事件循环正在运行，使用run_in_executor避免嵌套
+                        import concurrent.futures
+                        with concurrent.futures.ThreadPoolExecutor() as executor:
+                            future = executor.submit(self._sync_generate_speech, text, **kwargs)
+                            result = future.result()
                     else:
-                        logger.warning("⚠️ SoVITS推理引擎合成失败，回退到浏览器TTS")
-                finally:
-                    loop.close()
+                        # 事件循环未运行，可以直接运行
+                        result = loop.run_until_complete(self.sovits_engine.generate_speech(text, **kwargs))
+                except RuntimeError:
+                    # 没有事件循环，创建新的
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        result = loop.run_until_complete(self.sovits_engine.generate_speech(text, **kwargs))
+                    finally:
+                        loop.close()
+                        
+                if result:
+                    logger.info("✅ SoVITS推理引擎合成成功")
+                    return result
+                else:
+                    logger.warning("⚠️ SoVITS推理引擎合成失败，回退到浏览器TTS")
             
             # 回退到浏览器TTS（返回None让前端处理）
             logger.info("📢 使用浏览器TTS合成")
@@ -204,6 +223,17 @@ class TTSManager:
         except Exception as e:
             logger.error(f"语音合成失败: {e}")
             return None
+    
+    def _sync_generate_speech(self, text: str, **kwargs) -> Optional[str]:
+        """
+        在新事件循环中同步生成语音的辅助方法
+        """
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(self.sovits_engine.generate_speech(text, **kwargs))
+        finally:
+            loop.close()
     
     def get_status(self) -> Dict[str, Any]:
         """获取TTS状态"""

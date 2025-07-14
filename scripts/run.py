@@ -54,23 +54,10 @@ try:
     logger.info("✅ 所有模块导入成功")
     
 except ImportError as e:
-    logger.error(f"❌ 模块导入失败: {e}")
+    logger.error(f"❌ 后端模块导入失败: {e}")
     logger.error("请确保已安装所有依赖: pip install -r requirements.txt")
-    
-    # 尝试回退到旧的导入路径（向后兼容）
-    try:
-        logger.info("🔄 尝试使用向后兼容路径...")
-        from src.open_llm_vtuber.config import ConfigManager
-        from src.open_llm_vtuber.chat_history import chat_history
-        from src.open_llm_vtuber.llm_manager import llm_manager
-        from src.open_llm_vtuber.live2d_model import Live2DModel
-        from src.open_llm_vtuber.tts_manager import TTSManager
-        from src.open_llm_vtuber.sovits_inference_engine import SoVITSInferenceEngine
-        from src.open_llm_vtuber.server import create_app
-        logger.info("✅ 向后兼容模块导入成功")
-    except ImportError as e2:
-        logger.error(f"❌ 向后兼容模块导入也失败: {e2}")
-        sys.exit(1)
+    logger.error("请确保backend/目录结构完整")
+    sys.exit(1)
 
 # WebSocket和Web相关
 import websockets
@@ -89,8 +76,8 @@ from urllib.parse import urlparse, parse_qs
 try:
     from backend.ai.agent import create_agent
 except ImportError:
-    # 向后兼容
-    from src.open_llm_vtuber.agent import create_agent
+    logger.warning("⚠️ agent模块不存在，将跳过相关功能")
+    create_agent = None
 
 # 全局变量
 config = None
@@ -190,10 +177,7 @@ async def main():
         
         # 检查Qwen API状态（异步检查）
         try:
-            try:
-                from backend.ai.qwen_client import QwenClient
-            except ImportError:
-                from src.open_llm_vtuber.qwen_client import QwenClient
+            from backend.ai.qwen_client import QwenClient
             qwen_client = QwenClient()
             test_response = await qwen_client.generate_response("你好")
             if test_response:

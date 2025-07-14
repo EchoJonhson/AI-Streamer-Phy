@@ -29,7 +29,7 @@ async def test_pretrained_sovits():
     
     try:
         # 导入预训练SoVITS TTS
-        from src.open_llm_vtuber.pretrained_sovits_tts import PretrainedSoVITSTTS
+        from backend.voice.pretrained_sovits_tts import PretrainedSoVITSTTS
         
         # 初始化
         tts = PretrainedSoVITSTTS(config)
