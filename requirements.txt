@@ -63,5 +63,23 @@ tokenizers>=0.13,<1
 av>=11
 tensorboard
 
+# 语音识别(ASR)增强依赖
+faster-whisper>=1.0.0  # 本地Whisper模型支持
+SpeechRecognition>=3.10.0  # 多平台语音识别API封装
+
+# 音频处理增强
+pydub>=0.25.0  # 音频格式转换和处理
+webrtcvad>=2.0.10  # 语音活动检测(VAD)
+pyaudio>=0.2.11; platform_system != "Linux"  # 音频输入/输出流处理
+
+# HTTP客户端增强(用于ASR API调用)
+httpx>=0.25.0  # 现代HTTP客户端，支持HTTP/2
+
+# 错误监控和诊断
+sentry-sdk>=1.40.0  # 错误追踪和性能监控(可选)
+
+# 音频质量分析(可选)
+essentia>=2.1b6; platform_system != "Windows"  # 音频特征提取和分析
+
 # 可选功能依赖
 nltk>=3.8
