@@ -305,8 +305,11 @@ class SpeechRecognition {
       console.error('语音识别错误:', event.error);
       this.isListening = false;
       
+      // 处理具体错误类型
+      const errorInfo = this.handleSpeechRecognitionError(event.error);
+      
       if (this.onErrorCallback) {
-        this.onErrorCallback(event.error);
+        this.onErrorCallback(errorInfo);
       }
     };
 
@@ -467,6 +470,34 @@ class SpeechRecognition {
   isRecognizing() {
     return this.isListening;
   }
+
+  /**
+   * 处理语音识别错误
+   * @param {string} error - 错误代码
+   * @returns {Object} 错误信息对象
+   */
+  handleSpeechRecognitionError(error) {
+    const errorMessages = {
+      'no-speech': '没有检测到语音输入，请检查麦克风或重试',
+      'audio-capture': '无法捕获音频，请检查麦克风设备',
+      'not-allowed': '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问',
+      'network': '网络连接问题，请检查网络连接后重试',
+      'service-not-available': '语音识别服务不可用，请稍后重试',
+      'bad-grammar': '语法错误，请重新尝试',
+      'language-not-supported': '不支持的语言设置',
+      'aborted': '语音识别被中断'
+    };
+
+    const message = errorMessages[error] || `未知错误: ${error}`;
+    console.error('语音识别错误详情:', message);
+    
+    return {
+      code: error,
+      message,
+      isRetryable: ['network', 'service-not-available', 'no-speech'].includes(error),
+      isPermissionIssue: ['not-allowed', 'audio-capture'].includes(error)
+    };
+  }
 }
 
 // 全局语音识别实例
@@ -488,16 +519,126 @@ export const getSpeechRecognition = () => {
  * @returns {boolean} 是否支持
  */
 export const isSpeechRecognitionSupported = () => {
-  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const supportInfo = checkSpeechRecognitionSupport();
+  
+  // 如果有问题，输出详细信息
+  if (!supportInfo.isSupported) {
+    console.warn('语音识别不可用:', supportInfo.issues.join(', '));
+    console.log('浏览器信息:', supportInfo.browserInfo);
+  }
+  
+  return supportInfo.isSupported;
 };
 
 /**
- * 请求麦克风权限
+ * 检查麦克风权限状态
+ * @returns {Promise<string>} 权限状态: 'granted', 'denied', 'prompt', 'unknown'
+ */
+export const checkMicrophonePermission = async () => {
+  if (!navigator.permissions || !navigator.permissions.query) {
+    return 'unknown';
+  }
+  
+  try {
+    const result = await navigator.permissions.query({ name: 'microphone' });
+    return result.state;
+  } catch (error) {
+    console.warn('无法查询麦克风权限状态:', error);
+    return 'unknown';
+  }
+};
+
+/**
+ * 检查浏览器支持情况
+ * @returns {Object} 支持信息
+ */
+export const getBrowserSupportInfo = () => {
+  const info = {
+    speechRecognition: false,
+    mediaDevices: false,
+    isSecureContext: false,
+    browser: 'unknown'
+  };
+
+  // 检查语音识别支持
+  info.speechRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  
+  // 检查媒体设备支持
+  info.mediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  
+  // 检查安全上下文
+  info.isSecureContext = window.isSecureContext;
+  
+  // 检测浏览器类型
+  if (window.chrome) {
+    info.browser = 'chrome';
+  } else if (window.safari) {
+    info.browser = 'safari';
+  } else if (navigator.userAgent.includes('Firefox')) {
+    info.browser = 'firefox';
+  } else if (navigator.userAgent.includes('Edge')) {
+    info.browser = 'edge';
+  }
+
+  return info;
+};
+
+/**
+ * 增强的语音识别支持检查
+ * @returns {Object} 支持检查结果
+ */
+export const checkSpeechRecognitionSupport = () => {
+  const support = getBrowserSupportInfo();
+  const issues = [];
+  
+  if (!support.speechRecognition) {
+    issues.push('浏览器不支持语音识别API');
+  }
+  
+  if (!support.mediaDevices) {
+    issues.push('浏览器不支持媒体设备API');
+  }
+  
+  if (!support.isSecureContext) {
+    issues.push('语音识别需要HTTPS安全上下文');
+  }
+  
+  return {
+    isSupported: issues.length === 0,
+    issues,
+    browserInfo: support
+  };
+};
+
+/**
+ * 增强的麦克风权限请求
  * @returns {Promise<boolean>} 是否获得权限
  */
 export const requestMicrophonePermission = async () => {
+  // 检查API支持
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error('当前浏览器不支持媒体设备访问');
+  }
+
+  // 检查HTTPS
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    throw new Error('语音识别需要HTTPS安全连接');
+  }
+
+  // 先检查权限状态
+  const permissionState = await checkMicrophonePermission();
+  if (permissionState === 'denied') {
+    throw new Error('麦克风权限已被拒绝，请在浏览器设置中手动允许');
+  }
+
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    });
     
     // 立即停止流，只是为了检查权限
     stream.getTracks().forEach(track => track.stop());
@@ -506,31 +647,52 @@ export const requestMicrophonePermission = async () => {
     return true;
   } catch (error) {
     console.error('麦克风权限被拒绝:', error);
-    return false;
+    
+    // 处理不同类型的错误
+    switch (error.name) {
+      case 'NotAllowedError':
+        throw new Error('用户拒绝了麦克风权限');
+      case 'NotFoundError':
+        throw new Error('未找到麦克风设备');
+      case 'NotReadableError':
+        throw new Error('麦克风设备被其他应用占用');
+      case 'SecurityError':
+        throw new Error('安全错误：请确保使用HTTPS访问');
+      default:
+        throw new Error(`麦克风访问失败: ${error.message}`);
+    }
   }
 };
 
 /**
- * 简化的语音识别函数
+ * 增强的语音识别函数
  * @param {Object} options - 识别选项
  * @param {Function} onResult - 结果回调
  * @param {Function} onError - 错误回调
  * @returns {Promise<SpeechRecognition>} 语音识别实例
  */
 export const startSpeechRecognition = async (options = {}, onResult, onError) => {
-  // 检查浏览器支持
-  if (!isSpeechRecognitionSupported()) {
-    const error = new Error('当前浏览器不支持语音识别');
-    if (onError) onError(error);
+  // 全面检查浏览器支持
+  const supportCheck = checkSpeechRecognitionSupport();
+  if (!supportCheck.isSupported) {
+    const errorMessage = `语音识别不可用: ${supportCheck.issues.join(', ')}`;
+    const error = new Error(errorMessage);
+    if (onError) onError({ code: 'not-supported', message: errorMessage, isRetryable: false });
     throw error;
   }
 
   // 请求麦克风权限
-  const hasPermission = await requestMicrophonePermission();
-  if (!hasPermission) {
-    const error = new Error('麦克风权限被拒绝');
-    if (onError) onError(error);
-    throw error;
+  try {
+    await requestMicrophonePermission();
+  } catch (permissionError) {
+    const errorInfo = {
+      code: 'permission-denied',
+      message: permissionError.message,
+      isRetryable: false,
+      isPermissionIssue: true
+    };
+    if (onError) onError(errorInfo);
+    throw permissionError;
   }
 
   // 获取语音识别实例
@@ -548,9 +710,14 @@ export const startSpeechRecognition = async (options = {}, onResult, onError) =>
   try {
     recognition.start(options);
     return recognition;
-  } catch (error) {
-    if (onError) onError(error);
-    throw error;
+  } catch (startError) {
+    const errorInfo = {
+      code: 'start-failed',
+      message: `启动语音识别失败: ${startError.message}`,
+      isRetryable: true
+    };
+    if (onError) onError(errorInfo);
+    throw startError;
   }
 };
 

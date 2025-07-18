@@ -42,6 +42,14 @@ export default defineConfig({
     port: 3000,
     strictPort: false,
     open: true,
+    host: true, // 允许外部访问
+    // 开发环境HTTPS配置（语音识别需要）
+    https: process.env.HTTPS === 'true',
+    // 如果需要自定义证书，可以这样配置：
+    // https: process.env.HTTPS === 'true' ? {
+    //   key: fs.readFileSync('./ssl/private.key'),
+    //   cert: fs.readFileSync('./ssl/certificate.crt')
+    // } : false,
   },
   publicDir: 'public',
 })

@@ -546,14 +546,33 @@ const LivePage = () => {
               setSpeechText(result.interimTranscript);
             }
           },
-          (error) => {
-            console.error('语音识别错误:', error);
-            setRecognitionError(`识别错误: ${error}`);
+          (errorInfo) => {
+            console.error('语音识别错误:', errorInfo);
+            
+            // 根据错误类型设置不同的错误信息
+            if (typeof errorInfo === 'object' && errorInfo.message) {
+              setRecognitionError(errorInfo.message);
+              
+              // 如果是可重试的错误，提供重试提示
+              if (errorInfo.isRetryable) {
+                setRecognitionError(`${errorInfo.message} (可点击重试)`);
+              }
+              
+              // 如果是权限问题，提供帮助信息
+              if (errorInfo.isPermissionIssue) {
+                setRecognitionError(`${errorInfo.message}\n\n解决方法：\n1. 点击地址栏左侧的锁形图标\n2. 将麦克风权限设置为"允许"\n3. 刷新页面后重试`);
+              }
+            } else {
+              // 兼容旧版本的错误处理
+              setRecognitionError(`识别错误: ${errorInfo}`);
+            }
+            
             setIsListening(false);
             
             // 错误时重置语音识别实例，防止状态异常
-            if (error === 'network' || error === 'aborted') {
-              console.log('检测到网络或中止错误，重置语音识别实例');
+            const errorCode = errorInfo.code || errorInfo;
+            if (errorCode === 'network' || errorCode === 'aborted' || errorCode === 'service-not-available') {
+              console.log('检测到网络或服务错误，重置语音识别实例');
               resetSpeechRecognition();
             }
           }
