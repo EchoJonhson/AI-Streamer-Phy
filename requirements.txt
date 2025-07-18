@@ -1,5 +1,12 @@
 # AI-Streamer-Phy 依赖文件
 # 包含前端和后端所需的所有Python依赖
+#
+# 安装说明：
+# 1. 基础安装：pip install -r requirements.txt
+# 2. 可选依赖安装可能失败，可以跳过：
+#    - essentia: 仅用于高级音频分析，可选
+#    - pyaudio: 仅Windows需要，Linux/Mac使用系统音频
+# 3. 如遇到安装问题，可以注释掉对应行后重试
 
 # 核心Web服务依赖
 aiohttp==3.9.5
@@ -63,23 +70,29 @@ tokenizers>=0.13,<1
 av>=11
 tensorboard
 
-# 语音识别(ASR)增强依赖
+# 语音识别(ASR)核心依赖
 faster-whisper>=1.0.0  # 本地Whisper模型支持
 SpeechRecognition>=3.10.0  # 多平台语音识别API封装
 
-# 音频处理增强
+# 音频处理核心依赖
 pydub>=0.25.0  # 音频格式转换和处理
 webrtcvad>=2.0.10  # 语音活动检测(VAD)
-pyaudio>=0.2.11; platform_system != "Linux"  # 音频输入/输出流处理
 
 # HTTP客户端增强(用于ASR API调用)
 httpx>=0.25.0  # 现代HTTP客户端，支持HTTP/2
 
-# 错误监控和诊断
-sentry-sdk>=1.40.0  # 错误追踪和性能监控(可选)
+# ===========================================
+# 以下为可选依赖，安装失败可以跳过
+# ===========================================
 
-# 音频质量分析(可选)
-essentia>=2.1b6; platform_system != "Windows"  # 音频特征提取和分析
+# 系统音频处理(可选)
+# pyaudio>=0.2.11; platform_system == "Windows"  # Windows音频流处理
+
+# 错误监控(可选)
+# sentry-sdk>=1.40.0  # 错误追踪和性能监控
+
+# 高级音频分析(可选，安装复杂)
+# essentia>=2.1b5; platform_system != "Windows"  # 音频特征提取
 
 # 可选功能依赖
 nltk>=3.8
