@@ -8,6 +8,8 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>AI心理医生 - 小雨</title>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="shortcut icon" href="/vite.svg" />
     <style>
         * {
             margin: 0;
@@ -1410,16 +1412,8 @@
                 if (data.data.emotion) {
                     setExpression(data.data.emotion);
                 }
-                // 注意：禁用自动语音播放以避免与SoVITS音频冲突
-                // 只在没有SoVITS音频时才使用浏览器TTS
-                if (data.data.text && speechSynthesis && window.speechContextActivated && !window.sovitsAudioPlaying) {
-                    setTimeout(() => {
-                        debugLog('自动播放AI回复语音(浏览器TTS)');
-                        speakText(data.data.text);
-                    }, 500); // 延迟500ms播放，确保界面更新完成
-                } else if (data.data.text && speechSynthesis) {
-                    debugLog('AI回复已准备，点击语音按钮🔊播放');
-                }
+                // 语音播放现在由服务器的tts_response消息处理，避免重复播放
+                debugLog('AI回复已准备，语音将通过tts_response消息播放');
             } else if (type === 'modelCommand') {
                 executeModelCommand(data.data);
             } else if (type === 'asr_result') {
@@ -1435,9 +1429,6 @@
                 const ttsData = data.data;
                 debugLog(`🎵 收到SoVITS音频指令: ${ttsData.text.substring(0, 30)}...`);
 
-                // 设置标志位防止重复播放
-                window.sovitsAudioPlaying = true;
-                
                 // 播放SoVITS生成的音频文件
                 playSoVITSAudio(ttsData.audio_file);
             } else if (type === 'voice_status') {
@@ -1474,6 +1465,20 @@
                     // 更新聊天状态
                     if (data.text) {
                         showChatStatus(`AI: ${data.text}`);
+                    }
+                }
+            } else if (type === 'tts_browser') {
+                // 处理浏览器TTS指令
+                debugLog('收到浏览器TTS指令');
+                if (data.data && data.data.text) {
+                    // 只有在用户已激活语音上下文时才播放浏览器TTS
+                    if (window.speechContextActivated) {
+                        setTimeout(() => {
+                            debugLog('播放浏览器TTS语音');
+                            speakTextWithBrowser(data.data.text);
+                        }, 500);
+                    } else {
+                        debugLog('语音上下文未激活，跳过浏览器TTS播放');
                     }
                 }
             } else if (type === 'tts_error') {
@@ -1704,9 +1709,73 @@
             loadingIndicator.style.display = 'none';
         }
 
+        // 请求麦克风权限
+        async function requestMicrophonePermission() {
+            try {
+                debugLog('请求麦克风权限...');
+                
+                // 首先检查权限API是否可用
+                if ('permissions' in navigator) {
+                    const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+                    debugLog(`麦克风权限状态: ${permissionStatus.state}`);
+                    
+                    if (permissionStatus.state === 'denied') {
+                        throw new Error('麦克风权限被永久拒绝');
+                    }
+                }
+
+                // 请求媒体流权限（这会触发浏览器的权限对话框）
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // 立即停止流，我们只是为了获取权限
+                stream.getTracks().forEach(track => track.stop());
+                debugLog('✓ 麦克风权限获取成功');
+                return true;
+                
+            } catch (error) {
+                debugLog(`❌ 麦克风权限请求失败: ${error.message}`);
+                
+                // 显示用户友好的错误提示
+                let errorMessage = '';
+                if (error.name === 'NotAllowedError' || error.message.includes('权限被拒绝')) {
+                    errorMessage = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后刷新页面';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage = '未检测到麦克风设备，请检查硬件连接';
+                } else if (error.name === 'NotSupportedError') {
+                    errorMessage = '当前浏览器不支持麦克风访问功能';
+                } else {
+                    errorMessage = `麦克风访问失败: ${error.message}`;
+                }
+                
+                showNotification(errorMessage, 'error');
+                return false;
+            }
+        }
+
         // 初始化语音识别
-        function initSpeechRecognition() {
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        async function initSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                debugLog('浏览器不支持语音识别');
+                voiceBtn.style.display = 'none';
+                showNotification('当前浏览器不支持语音识别功能', 'warning');
+                return;
+            }
+
+            // 请求麦克风权限
+            const hasPermission = await requestMicrophonePermission();
+            if (!hasPermission) {
+                debugLog('麦克风权限被拒绝，语音输入不可用');
+                voiceBtn.style.display = 'none';
+                return;
+            }
+
+            try {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 speechRecognition = new SpeechRecognition();
 
@@ -1718,6 +1787,7 @@
                     debugLog('语音识别开始');
                     isRecording = true;
                     voiceBtn.classList.add('recording');
+                    showNotification('开始语音识别，请说话...', 'info');
                 };
 
                 speechRecognition.onresult = function(event) {
@@ -1734,11 +1804,32 @@
                         debugLog(`语音识别结果: ${finalTranscript}`);
                         chatInput.value = finalTranscript;
                         sendMessage();
+                        showNotification('语音识别完成', 'success');
                     }
                 };
 
                 speechRecognition.onerror = function(event) {
                     debugLog(`语音识别错误: ${event.error}`);
+                    let errorMessage = '';
+                    
+                    switch(event.error) {
+                        case 'not-allowed':
+                            errorMessage = '麦克风权限被拒绝';
+                            break;
+                        case 'no-speech':
+                            errorMessage = '未检测到语音输入';
+                            break;
+                        case 'audio-capture':
+                            errorMessage = '音频捕获失败';
+                            break;
+                        case 'network':
+                            errorMessage = '网络错误，请检查网络连接';
+                            break;
+                        default:
+                            errorMessage = `语音识别错误: ${event.error}`;
+                    }
+                    
+                    showNotification(errorMessage, 'error');
                     stopRecording();
                 };
 
@@ -1748,9 +1839,12 @@
                 };
 
                 voiceEnabled = true;
-                debugLog('语音识别初始化成功');
-            } else {
-                debugLog('浏览器不支持语音识别');
+                debugLog('✓ 语音识别初始化成功');
+                showNotification('语音识别功能已启用', 'success');
+                
+            } catch (error) {
+                debugLog(`语音识别初始化失败: ${error.message}`);
+                showNotification('语音识别初始化失败', 'error');
                 voiceBtn.style.display = 'none';
             }
         }
@@ -1942,6 +2036,60 @@
                 debugLog('❌ WebSocket连接不可用，无法使用SoVITS');
                 showNotification('SoVITS连接不可用', 'error');
             }
+        }
+
+        // 使用浏览器TTS播放语音
+        function speakTextWithBrowser(text) {
+            if (!text) {
+                debugLog('❌ 文本为空，无法播放语音');
+                return;
+            }
+
+            if (!speechSynthesis) {
+                debugLog('❌ 浏览器不支持语音合成');
+                showNotification('浏览器不支持语音合成', 'error');
+                return;
+            }
+
+            debugLog(`🎵 使用浏览器TTS播放语音: ${text}`);
+
+            // 停止当前播放的语音
+            speechSynthesis.cancel();
+
+            // 创建语音合成实例
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = voiceParameters.speed || 1.0;
+            utterance.pitch = voiceParameters.pitch || 1.0;
+            utterance.volume = voiceParameters.volume || 1.0;
+
+            // 设置首选语音
+            if (window.preferredVoice) {
+                utterance.voice = window.preferredVoice;
+            }
+
+            // 播放状态指示
+            utterance.onstart = function() {
+                actionBtn.classList.add('speaking');
+                actionBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+                debugLog('开始播放浏览器TTS语音');
+            };
+
+            utterance.onend = function() {
+                actionBtn.classList.remove('speaking');
+                actionBtn.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
+                debugLog('浏览器TTS语音播放完成');
+            };
+
+            utterance.onerror = function(event) {
+                actionBtn.classList.remove('speaking');
+                actionBtn.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
+                debugLog(`浏览器TTS语音播放失败: ${event.error}`);
+                showNotification('浏览器TTS语音播放失败', 'error');
+            };
+
+            // 播放语音
+            speechSynthesis.speak(utterance);
         }
 
         // 停止语音播放（已废弃，SoVITS会自动管理）
@@ -2282,17 +2430,10 @@
                 return;
             }
 
-            // 检查是否已经在播放音频，防止重复播放
-            if (window.currentSoVITSAudio && !window.currentSoVITSAudio.paused) {
-                debugLog('⚠️ SoVITS音频已在播放中，跳过重复播放');
-                return;
-            }
-
             debugLog(`🎵 播放SoVITS音频: ${audioFilePath}`);
 
             // 创建音频元素
             const audio = new Audio(audioFilePath);
-            window.currentSoVITSAudio = audio;
 
             // 设置音频事件
             audio.onloadstart = function() {
@@ -2314,10 +2455,6 @@
                 actionBtn.classList.remove('speaking');
                 actionBtn.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
                 debugLog('🎵 SoVITS音频播放完成');
-                
-                // 清除当前音频引用和标志位
-                window.currentSoVITSAudio = null;
-                window.sovitsAudioPlaying = false;
             };
 
             audio.onerror = function(error) {
@@ -2325,10 +2462,6 @@
                 actionBtn.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
                 debugLog(`❌ SoVITS音频播放失败: ${error}`);
                 showNotification('SoVITS音频播放失败', 'error');
-                
-                // 清除当前音频引用和标志位
-                window.currentSoVITSAudio = null;
-                window.sovitsAudioPlaying = false;
             };
 
             // 加载音频

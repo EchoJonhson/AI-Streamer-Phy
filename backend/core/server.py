@@ -262,6 +262,12 @@ class AIVTuberServer:
             # 移除连接
             if ws in self.websocket_connections:
                 self.websocket_connections.remove(ws)
+            
+            # 清理TTS处理状态
+            if hasattr(self, '_tts_processing_dict'):
+                ws_id = id(ws)
+                self._tts_processing_dict.pop(ws_id, None)
+                
             logger.info(f"WebSocket连接已关闭，当前连接数: {len(self.websocket_connections)}")
         
         return ws
@@ -725,13 +731,18 @@ class AIVTuberServer:
             ws: WebSocket连接
             text: 要合成的文本
         """
+        # 为每个WebSocket连接创建独立的TTS处理标志位
+        ws_id = id(ws)
+        if not hasattr(self, '_tts_processing_dict'):
+            self._tts_processing_dict = {}
+            
         # 检查是否有TTS任务正在处理中，避免重复处理
-        if hasattr(self, '_tts_processing') and self._tts_processing:
+        if self._tts_processing_dict.get(ws_id, False):
             logger.warning("⚠️ TTS任务正在处理中，跳过重复请求")
             return
             
         try:
-            self._tts_processing = True
+            self._tts_processing_dict[ws_id] = True
             logger.info(f"🎯 开始TTS语音合成: {text[:50]}...")
             
             # 使用新的TTS管理器
@@ -806,7 +817,7 @@ class AIVTuberServer:
             })
         finally:
             # 确保处理标志位被清除
-            self._tts_processing = False
+            self._tts_processing_dict[ws_id] = False
     
     async def get_model_config(self, request):
         """获取模型配置的API

@@ -26,7 +26,14 @@ import {
 } from '../services/modelControlService';
 import { 
   speakText, 
-  mockSpeechSynthesis 
+  mockSpeechSynthesis,
+  startSpeechRecognition,
+  stopSpeechRecognition,
+  isSpeechRecognitionSupported,
+  mockSpeechRecognition,
+  destroySpeechRecognition,
+  resetSpeechRecognition,
+  clearMockRecognitionTimers
 } from '../services/speechService';
 import {
   getConfig,
@@ -75,10 +82,17 @@ const LivePage = () => {
   const [showSettings, setShowSettings] = useState(false); // 是否显示设置
   const [apiProvider, setApiProvider] = useState(localStorage.getItem('api_provider') || 'mock'); // API提供者：mock, huggingface
   
+  // 语音识别相关状态
+  const [isListening, setIsListening] = useState(false); // 是否正在语音识别
+  const [speechRecognitionSupported, setSpeechRecognitionSupported] = useState(false); // 是否支持语音识别
+  const [speechText, setSpeechText] = useState(''); // 语音识别的文本
+  const [recognitionError, setRecognitionError] = useState(''); // 识别错误信息
+  
   const navigate = useNavigate();
   const modelRef = useRef(null); // 存储Live2D模型引用
   const blinkTimerRef = useRef(null); // 存储眨眼定时器引用
   const messagesEndRef = useRef(null); // 用于自动滚动到最新消息
+  const speechRecognitionRef = useRef(null); // 存储语音识别实例引用
 
   // 初始化Live2D环境
   useEffect(() => {
@@ -98,6 +112,11 @@ const LivePage = () => {
     // 设置模型路径
     setModelPath(modelConfig.path);
     
+    // 检查语音识别支持
+    setSpeechRecognitionSupported(isSpeechRecognitionSupported());
+    
+    console.log('语音识别支持状态:', isSpeechRecognitionSupported());
+    
     // 设置UI配置
     setBackgroundType(config.ui.backgroundType);
     setBackgroundSrc(config.ui.backgroundSrc);
@@ -114,6 +133,45 @@ const LivePage = () => {
       setShowSettings(true);
     }
   }, [apiProvider]);
+
+  // 组件卸载时清理资源
+  useEffect(() => {
+    // 页面卸载时清理资源
+    const handleBeforeUnload = () => {
+      console.log('页面即将卸载，清理语音识别资源...');
+      clearMockRecognitionTimers();
+      destroySpeechRecognition();
+    };
+    
+    // 注册页面卸载事件
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      console.log('LivePage组件卸载，清理语音识别资源...');
+      
+      // 移除页面卸载事件监听器
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // 停止当前的语音识别
+      if (isListening) {
+        stopSpeechRecognition();
+      }
+      
+      // 清理模拟语音识别的定时器
+      clearMockRecognitionTimers();
+      
+      // 销毁语音识别实例
+      destroySpeechRecognition();
+      
+      // 清理眨眼定时器
+      if (blinkTimerRef.current) {
+        clearInterval(blinkTimerRef.current);
+        blinkTimerRef.current = null;
+      }
+      
+      console.log('语音识别资源清理完成');
+    };
+  }, [isListening]); // 依赖isListening确保在语音识别状态改变时正确清理
 
   // 检查用户是否已登录
   useEffect(() => {
@@ -440,6 +498,116 @@ const LivePage = () => {
     setDebugMode(prev => !prev);
   };
 
+  // 开始语音识别
+  const startSpeechRecognitionHandler = async () => {
+    if (isListening) {
+      console.warn('语音识别已经在进行中');
+      return;
+    }
+
+    setIsListening(true);
+    setRecognitionError('');
+    setSpeechText('');
+
+    try {
+      if (apiProvider === 'mock' && shouldUseMockApi()) {
+        // 使用模拟语音识别
+        const result = await mockSpeechRecognition((data) => {
+          console.log('模拟语音识别结果:', data);
+          
+          if (data.isFinal) {
+            setSpeechText(data.finalTranscript);
+            setMessage(data.finalTranscript);
+            setIsListening(false);
+          } else {
+            setSpeechText(data.interimTranscript);
+          }
+        });
+        
+        console.log('模拟语音识别完成:', result);
+      } else {
+        // 使用真实语音识别
+        speechRecognitionRef.current = await startSpeechRecognition(
+          { 
+            lang: 'zh-CN', 
+            continuous: false, 
+            interimResults: true 
+          },
+          (result) => {
+            console.log('语音识别结果:', result);
+            
+            if (result.isFinal) {
+              // 最终结果
+              setSpeechText(result.finalTranscript);
+              setMessage(result.finalTranscript);
+              setIsListening(false);
+            } else {
+              // 中间结果
+              setSpeechText(result.interimTranscript);
+            }
+          },
+          (errorInfo) => {
+            console.error('语音识别错误:', errorInfo);
+            
+            // 根据错误类型设置不同的错误信息
+            if (typeof errorInfo === 'object' && errorInfo.message) {
+              setRecognitionError(errorInfo.message);
+              
+              // 如果是可重试的错误，提供重试提示
+              if (errorInfo.isRetryable) {
+                setRecognitionError(`${errorInfo.message} (可点击重试)`);
+              }
+              
+              // 如果是权限问题，提供帮助信息
+              if (errorInfo.isPermissionIssue) {
+                setRecognitionError(`${errorInfo.message}\n\n解决方法：\n1. 点击地址栏左侧的锁形图标\n2. 将麦克风权限设置为"允许"\n3. 刷新页面后重试`);
+              }
+            } else {
+              // 兼容旧版本的错误处理
+              setRecognitionError(`识别错误: ${errorInfo}`);
+            }
+            
+            setIsListening(false);
+            
+            // 错误时重置语音识别实例，防止状态异常
+            const errorCode = errorInfo.code || errorInfo;
+            if (errorCode === 'network' || errorCode === 'aborted' || errorCode === 'service-not-available') {
+              console.log('检测到网络或服务错误，重置语音识别实例');
+              resetSpeechRecognition();
+            }
+          }
+        );
+      }
+    } catch (error) {
+      console.error('启动语音识别失败:', error);
+      setRecognitionError(`启动失败: ${error.message}`);
+      setIsListening(false);
+    }
+  };
+
+  // 停止语音识别
+  const stopSpeechRecognitionHandler = () => {
+    if (!isListening) {
+      console.warn('语音识别没有在进行中');
+      return;
+    }
+
+    console.log('手动停止语音识别');
+    
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+    } else {
+      stopSpeechRecognition();
+    }
+    
+    setIsListening(false);
+  };
+
+  // 清理语音识别错误
+  const clearRecognitionError = () => {
+    setRecognitionError('');
+  };
+
   return (
     <div className="live-page">
       <div className="live-container">
@@ -519,21 +687,59 @@ const LivePage = () => {
           </div>
           
           <form className="message-form" onSubmit={handleSendMessage}>
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="发送消息给AI主播..."
-              className="message-input"
-              disabled={isProcessing}
-            />
-            <button 
-              type="submit" 
-              className="send-button"
-              disabled={isProcessing}
-            >
-              {isProcessing ? '处理中...' : '发送'}
-            </button>
+            <div className="input-container">
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="发送消息给AI主播..."
+                className="message-input"
+                disabled={isProcessing}
+              />
+              
+              {/* 语音输入按钮 */}
+              {speechRecognitionSupported && (
+                <button 
+                  type="button"
+                  className={`voice-input-button ${isListening ? 'listening' : ''}`}
+                  onClick={isListening ? stopSpeechRecognitionHandler : startSpeechRecognitionHandler}
+                  disabled={isProcessing}
+                  title={isListening ? '点击停止语音识别' : '点击开始语音识别'}
+                >
+                  {isListening ? '🎙️' : '🎤'}
+                </button>
+              )}
+              
+              {/* 发送按钮 */}
+              <button 
+                type="submit" 
+                className="send-button"
+                disabled={isProcessing}
+              >
+                {isProcessing ? '处理中...' : '发送'}
+              </button>
+            </div>
+            
+            {/* 语音识别状态和错误显示 */}
+            {isListening && (
+              <div className="speech-status">
+                <span className="listening-indicator">🎙️ 正在听取语音...</span>
+                {speechText && <span className="speech-text">识别中: {speechText}</span>}
+              </div>
+            )}
+            
+            {recognitionError && (
+              <div className="speech-error">
+                <span className="error-text">⚠️ {recognitionError}</span>
+                <button 
+                  type="button" 
+                  className="clear-error-button"
+                  onClick={clearRecognitionError}
+                >
+                  清除
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>

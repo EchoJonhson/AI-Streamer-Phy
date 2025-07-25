@@ -1410,15 +1410,8 @@
                 if (data.data.emotion) {
                     setExpression(data.data.emotion);
                 }
-                // 自动播放AI回复的语音（仅在用户激活语音上下文后）
-                if (data.data.text && speechSynthesis && window.speechContextActivated) {
-                    setTimeout(() => {
-                        debugLog('自动播放AI回复语音');
-                        speakText(data.data.text);
-                    }, 500); // 延迟500ms播放，确保界面更新完成
-                } else if (data.data.text && speechSynthesis) {
-                    debugLog('AI回复已准备，点击语音按钮🔊播放');
-                }
+                // 语音播放现在由服务器的tts_response消息处理，避免重复播放
+                debugLog('AI回复已准备，语音将通过tts_response消息播放');
             } else if (type === 'modelCommand') {
                 executeModelCommand(data.data);
             } else if (type === 'asr_result') {
@@ -1470,6 +1463,20 @@
                     // 更新聊天状态
                     if (data.text) {
                         showChatStatus(`AI: ${data.text}`);
+                    }
+                }
+            } else if (type === 'tts_browser') {
+                // 处理浏览器TTS指令
+                debugLog('收到浏览器TTS指令');
+                if (data.data && data.data.text) {
+                    // 只有在用户已激活语音上下文时才播放浏览器TTS
+                    if (window.speechContextActivated) {
+                        setTimeout(() => {
+                            debugLog('播放浏览器TTS语音');
+                            speakTextWithBrowser(data.data.text);
+                        }, 500);
+                    } else {
+                        debugLog('语音上下文未激活，跳过浏览器TTS播放');
                     }
                 }
             } else if (type === 'tts_error') {
@@ -2027,6 +2034,60 @@
                 debugLog('❌ WebSocket连接不可用，无法使用SoVITS');
                 showNotification('SoVITS连接不可用', 'error');
             }
+        }
+
+        // 使用浏览器TTS播放语音
+        function speakTextWithBrowser(text) {
+            if (!text) {
+                debugLog('❌ 文本为空，无法播放语音');
+                return;
+            }
+
+            if (!speechSynthesis) {
+                debugLog('❌ 浏览器不支持语音合成');
+                showNotification('浏览器不支持语音合成', 'error');
+                return;
+            }
+
+            debugLog(`🎵 使用浏览器TTS播放语音: ${text}`);
+
+            // 停止当前播放的语音
+            speechSynthesis.cancel();
+
+            // 创建语音合成实例
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = voiceParameters.speed || 1.0;
+            utterance.pitch = voiceParameters.pitch || 1.0;
+            utterance.volume = voiceParameters.volume || 1.0;
+
+            // 设置首选语音
+            if (window.preferredVoice) {
+                utterance.voice = window.preferredVoice;
+            }
+
+            // 播放状态指示
+            utterance.onstart = function() {
+                actionBtn.classList.add('speaking');
+                actionBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+                debugLog('开始播放浏览器TTS语音');
+            };
+
+            utterance.onend = function() {
+                actionBtn.classList.remove('speaking');
+                actionBtn.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
+                debugLog('浏览器TTS语音播放完成');
+            };
+
+            utterance.onerror = function(event) {
+                actionBtn.classList.remove('speaking');
+                actionBtn.style.background = 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)';
+                debugLog(`浏览器TTS语音播放失败: ${event.error}`);
+                showNotification('浏览器TTS语音播放失败', 'error');
+            };
+
+            // 播放语音
+            speechSynthesis.speak(utterance);
         }
 
         // 停止语音播放（已废弃，SoVITS会自动管理）
